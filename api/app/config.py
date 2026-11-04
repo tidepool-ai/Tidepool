@@ -68,6 +68,8 @@ class Settings:
     refresh_token_days: int = 30
     magic_link_minutes: int = 15
     refresh_cookie_secure: bool = _flag(os.getenv("REFRESH_COOKIE_SECURE", "true"))
+    # Largest page document the API accepts, in bytes of JSON (PUT /api/pages/{id}/content).
+    max_page_content_bytes: int = int(os.getenv("MAX_PAGE_CONTENT_BYTES") or 1_000_000)
     glm_base_url: str = os.getenv("GLM_BASE_URL", "")
     glm_api_key: str = os.getenv("GLM_API_KEY", "")
     glm_model: str = os.getenv("GLM_MODEL", "")

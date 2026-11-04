@@ -8,9 +8,10 @@ import uuid
 from datetime import UTC, datetime
 
 from sqlalchemy import ColumnElement, bindparam, select, text, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.pages.models import Ltree, Page, path_label
+from app.pages.models import Ltree, Page, PageContent, path_label
 from app.workspaces.models import Role
 from app.workspaces.service import WorkspaceForbiddenError, WorkspaceNotFoundError, require_member
 
@@ -179,3 +180,24 @@ async def list_top_level(session: AsyncSession, workspace_id: uuid.UUID) -> list
         .order_by(Page.created_at, Page.id)
     )
     return list(rows)
+
+
+async def get_content(session: AsyncSession, page: Page) -> PageContent | None:
+    return await session.get(PageContent, page.id)
+
+
+async def save_content(session: AsyncSession, page: Page, doc: dict, user_id: uuid.UUID) -> PageContent:
+    """Replace the page's document (last write wins)."""
+    if page.archived_at is not None:
+        raise PageConflictError("Restore the page before changing it")
+    await session.execute(
+        insert(PageContent)
+        .values(page_id=page.id, doc=doc, updated_by=user_id)
+        .on_conflict_do_update(
+            index_elements=[PageContent.page_id],
+            set_={"doc": doc, "updated_by": user_id, "updated_at": text("clock_timestamp()")},
+        )
+    )
+    content = await session.get(PageContent, page.id, populate_existing=True)
+    assert content is not None
+    return content

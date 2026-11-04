@@ -5,6 +5,7 @@ import {
   ElementRef,
   ViewEncapsulation,
   afterNextRender,
+  effect,
   inject,
   input,
   output,
@@ -54,6 +55,8 @@ export class EditorComponent {
   readonly content = input<JSONContent | null>(null);
   readonly label = input('Page content');
   readonly placeholder = input('Start writing…');
+  /** False shows the document read-only (e.g. a page in the trash). */
+  readonly editable = input(true);
   readonly contentChange = output<JSONContent>();
   /** Emitted once the editor exists (tests and future toolbars use it). */
   readonly ready = output<Editor>();
@@ -67,6 +70,7 @@ export class EditorComponent {
         element: this.host().nativeElement,
         extensions: editorExtensions(this.placeholder()),
         content: this.content() ?? EMPTY_DOC,
+        editable: this.editable(),
         editorProps: {
           attributes: {
             role: 'textbox',
@@ -78,6 +82,10 @@ export class EditorComponent {
         onUpdate: ({ editor }) => this.contentChange.emit(editor.getJSON()),
       });
       this.ready.emit(this.editor);
+    });
+    effect(() => {
+      const editable = this.editable();
+      if (this.editor && this.editor.isEditable !== editable) this.editor.setEditable(editable, false);
     });
     inject(DestroyRef).onDestroy(() => {
       this.editor?.destroy();

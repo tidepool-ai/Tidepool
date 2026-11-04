@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
-from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
+from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
 
 Title = Field(default="", max_length=200)
 Icon = Field(default=None, max_length=32)
@@ -40,3 +41,27 @@ class PageOut(BaseModel):
     archived_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+class PageContentIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # A Tiptap document: {"type": "doc", "content": [...]}
+    content: dict[str, Any]
+
+    @field_validator("content")
+    @classmethod
+    def _is_document(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if value.get("type") != "doc":
+            raise ValueError('content must be a document: {"type": "doc", ...}')
+        if not isinstance(value.get("content", []), list):
+            raise ValueError("content.content must be a list of blocks")
+        return value
+
+
+class PageContentOut(BaseModel):
+    # Echoed so a client can tell which page a (possibly late) response belongs to.
+    page_id: uuid.UUID
+    # null until the page is first saved
+    content: dict[str, Any] | None
+    updated_at: datetime | None

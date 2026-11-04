@@ -3,8 +3,14 @@
   <p class="lead">It may have been deleted, or you don't have access to it.</p>
 } @else if (page.hasValue()) {
   @let current = page.value();
+  <div class="status-bar">
+    <span class="save-status" role="status" aria-live="polite">{{ saveMessage() }}</span>
+    @if (autosave()?.status() === 'error') {
+      <button type="button" class="link-button" (click)="retrySave()">Retry</button>
+    }
+  </div>
   @if (current.archived_at) {
-    <p class="banner" role="status">This page is in the trash.</p>
+    <p class="banner" role="status">This page is in the trash. Restore it to edit.</p>
   }
   <input
     #titleField
@@ -13,6 +19,7 @@
     placeholder="Untitled"
     maxlength="200"
     [value]="current.title"
+    [readOnly]="!!current.archived_at"
     [attr.aria-describedby]="titleError() ? 'title-error' : null"
     (keydown.enter)="titleEnter($event, titleField)"
     (blur)="saveTitle(titleField)"
@@ -20,8 +27,22 @@
   @if (titleError()) {
     <p id="title-error" class="error" role="alert">Couldn't save the title. Try again.</p>
   }
-  @for (id of [pageId()]; track id) {
-    <app-editor [content]="content()" (contentChange)="content.set($event)" />
+  @if (saved.error()) {
+    <!-- Never show an empty editor here: autosaving it would overwrite the real content. -->
+    <p class="error" role="alert">
+      Couldn't load this page's content.
+      <button type="button" class="link-button" (click)="saved.reload()">Try again</button>
+    </p>
+  } @else if (loadedContent(); as loaded) {
+    @for (id of [loaded.page_id]; track id) {
+      <app-editor
+        [content]="loaded.content"
+        [editable]="!current.archived_at"
+        (contentChange)="contentChanged($event)"
+      />
+    }
+  } @else {
+    <p class="lead" role="status">Loading…</p>
   }
 } @else {
   <p class="lead" role="status">Loading…</p>
