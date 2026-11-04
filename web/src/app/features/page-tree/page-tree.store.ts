@@ -156,6 +156,12 @@ export const PageTreeStore = signalStore(
         }
       },
 
+      /** Show a title saved elsewhere (e.g. the page view) in the tree, if the page is loaded. */
+      applyTitle(id: string, title: string): void {
+        const page = store.pages()[id];
+        if (page) patchState(store, (state) => ({ pages: { ...state.pages, [id]: { ...page, title } } }));
+      },
+
       /** Move a page (and its subpages) to the trash. Returns false if the server refused. */
       async trash(id: string): Promise<boolean> {
         const page = store.pages()[id];

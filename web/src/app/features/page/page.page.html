@@ -1,0 +1,28 @@
+@if (page.error()) {
+  <h1 class="missing">Page not found</h1>
+  <p class="lead">It may have been deleted, or you don't have access to it.</p>
+} @else if (page.hasValue()) {
+  @let current = page.value();
+  @if (current.archived_at) {
+    <p class="banner" role="status">This page is in the trash.</p>
+  }
+  <input
+    #titleField
+    class="page-title"
+    aria-label="Page title"
+    placeholder="Untitled"
+    maxlength="200"
+    [value]="current.title"
+    [attr.aria-describedby]="titleError() ? 'title-error' : null"
+    (keydown.enter)="titleEnter($event, titleField)"
+    (blur)="saveTitle(titleField)"
+  />
+  @if (titleError()) {
+    <p id="title-error" class="error" role="alert">Couldn't save the title. Try again.</p>
+  }
+  @for (id of [pageId()]; track id) {
+    <app-editor [content]="content()" (contentChange)="content.set($event)" />
+  }
+} @else {
+  <p class="lead" role="status">Loading…</p>
+}
