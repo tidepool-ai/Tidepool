@@ -14,7 +14,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: unit tests cover each setting and system-mode switching; contrast test asserts section 5.7 ratios.
 - [x] **T04 App shell (web)**: Icon rail + spaces panel + main outlet per the Home design; routes `/login`, `/home`, `/p/:pageId`, `/settings/appearance` (lazy); auth guard; login page calling T02.
   - Done when: guard redirects signed-out users; shell is keyboard navigable; skip link present.
-- [ ] **T05 Workspaces (api)**: Workspace and member (owner/admin/member/guest) models; a personal workspace created on first sign-in; `GET /api/workspaces`, `GET /api/workspaces/{id}/members`.
+- [x] **T05 Workspaces (api)**: Workspace and member (owner/admin/member/guest) models; a personal workspace created on first sign-in; `GET /api/workspaces`, `GET /api/workspaces/{id}/members`.
   - Done when: tests cover creation and that members only see their workspaces.
 - [ ] **T06 Pages API (api)**: Page model (parent_id, ltree path, title, icon, cover, archived_at); create, get, rename, move, trash, restore; `GET /api/pages/{id}/children` (one level).
   - Done when: tests cover nesting, moving a subtree, trash/restore and access checks.

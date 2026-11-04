@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.router import router as auth_router
 from app.config import settings
 from app.db import get_session
+from app.workspaces.router import router as workspaces_router
 
 HEALTH_DB_TIMEOUT_SECONDS = 2
 
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(auth_router)
+    app.include_router(workspaces_router)
 
     @app.get("/health", tags=["system"])
     async def health(session: Annotated[AsyncSession, Depends(get_session)]) -> JSONResponse:
