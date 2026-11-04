@@ -1,0 +1,49 @@
+<a class="skip-link" href="#main" (click)="skipToMain($event)">Skip to main content</a>
+
+<div class="shell">
+  <nav class="rail" aria-label="Primary">
+    <a class="logo" routerLink="/home" aria-label="Tidepool home">T</a>
+    <ul>
+      <li>
+        <a
+          class="rail-item"
+          routerLink="/home"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          aria-label="Home"
+          title="Home"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z" /></svg>
+        </a>
+      </li>
+      <li>
+        <a
+          class="rail-item"
+          routerLink="/settings/appearance"
+          routerLinkActive="active"
+          ariaCurrentWhenActive="page"
+          aria-label="Settings"
+          title="Settings"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" />
+          </svg>
+        </a>
+      </li>
+    </ul>
+    <button type="button" class="rail-item sign-out" aria-label="Sign out" title="Sign out" (click)="signOut()">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9" /></svg>
+    </button>
+  </nav>
+
+  <nav class="spaces" aria-label="Spaces">
+    <p class="account">{{ user()?.email }}</p>
+    <h2 class="overline">Private</h2>
+    <p class="empty">No pages yet</p>
+  </nav>
+
+  <main id="main" class="main" tabindex="-1" #main>
+    <router-outlet />
+  </main>
+</div>

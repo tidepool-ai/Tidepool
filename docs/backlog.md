@@ -12,7 +12,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: tests cover request link, verify link, refresh, logout, expired and reused tokens.
 - [x] **T03 Theme service (web)**: All 5 schemes x light/dark tokens from DESIGN-SYSTEM.md section 5; `ThemeService` (signals) with scheme, mode (light/dark/system), text size, high contrast; saved to localStorage; no-flash script in `index.html`.
   - Done when: unit tests cover each setting and system-mode switching; contrast test asserts section 5.7 ratios.
-- [ ] **T04 App shell (web)**: Icon rail + spaces panel + main outlet per the Home design; routes `/login`, `/home`, `/p/:pageId`, `/settings/appearance` (lazy); auth guard; login page calling T02.
+- [x] **T04 App shell (web)**: Icon rail + spaces panel + main outlet per the Home design; routes `/login`, `/home`, `/p/:pageId`, `/settings/appearance` (lazy); auth guard; login page calling T02.
   - Done when: guard redirects signed-out users; shell is keyboard navigable; skip link present.
 - [ ] **T05 Workspaces (api)**: Workspace and member (owner/admin/member/guest) models; a personal workspace created on first sign-in; `GET /api/workspaces`, `GET /api/workspaces/{id}/members`.
   - Done when: tests cover creation and that members only see their workspaces.
