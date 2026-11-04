@@ -57,8 +57,8 @@ async def create_magic_link(session: AsyncSession, email: str) -> str:
 
 
 def deliver_magic_link(email: str, url: str) -> None:
-    # No email sender yet (MVP): in development the link goes to the console.
-    if settings.app_env == "development":
+    # No email sender yet (MVP): the link can only go to the logs (see LOG_MAGIC_LINKS).
+    if settings.log_magic_links:
         logger.info("Magic link for %s: %s", normalize_email(email), url)
     else:
         logger.warning("Email delivery is not configured; magic link for %s was not sent", email)
