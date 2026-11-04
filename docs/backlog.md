@@ -18,7 +18,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: tests cover creation and that members only see their workspaces.
 - [x] **T06 Pages API (api)**: Page model (parent_id, ltree path, title, icon, cover, archived_at); create, get, rename, move, trash, restore; `GET /api/pages/{id}/children` (one level).
   - Done when: tests cover nesting, moving a subtree, trash/restore and access checks.
-- [ ] **T07 Sidebar page tree (web)**: Lazy-loaded tree in the spaces panel; create page, rename inline, expand/collapse, trash; active page highlighted.
+- [x] **T07 Sidebar page tree (web)**: Lazy-loaded tree in the spaces panel; create page, rename inline, expand/collapse, trash; active page highlighted.
   - Done when: component tests cover create/rename/expand; works with keyboard.
 
 ## Phase 1: Editor

@@ -1,0 +1,41 @@
+<section class="page-tree" aria-labelledby="private-heading">
+  <div class="header">
+    <h2 class="overline" id="private-heading">Private</h2>
+    <button
+      type="button"
+      class="add-page"
+      aria-label="Add a page"
+      [disabled]="store.status() !== 'ready'"
+      (click)="store.create(null)"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+    </button>
+  </div>
+
+  @switch (store.status()) {
+    @case ('error') {
+      <p class="note">
+        Couldn't load your pages.
+        <button type="button" class="link-button" (click)="retry()">Try again</button>
+      </p>
+    }
+    @case ('ready') {
+      @if (store.children()[ROOT]; as ids) {
+        @if (ids.length) {
+          <ul role="list">
+            @for (id of ids; track id) {
+              <li><app-page-tree-item [pageId]="id" /></li>
+            }
+          </ul>
+        } @else {
+          <p class="note">No pages yet</p>
+        }
+      }
+    }
+    @default {
+      <p class="note">Loading…</p>
+    }
+  }
+
+  <p class="visually-hidden" role="status" aria-live="polite">{{ store.announcement() }}</p>
+</section>
