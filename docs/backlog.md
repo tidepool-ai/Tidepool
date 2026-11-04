@@ -6,7 +6,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
 ## Phase 0: Foundations
 
 - [x] **T00 Scaffold**: Angular app in `web/`, FastAPI in `api/`, CI, CLAUDE.md.
-- [ ] **T01 Database setup (api)**: Async SQLAlchemy 2 + Alembic + PostgreSQL. Add `docker-compose.yml` with Postgres 16. CI `api` job gets a Postgres service.
+- [x] **T01 Database setup (api)**: Async SQLAlchemy 2 + Alembic + PostgreSQL. Add `docker-compose.yml` with Postgres 16. CI `api` job gets a Postgres service.
   - Done when: `alembic upgrade head` runs; a pytest fixture gives each test a clean DB; `/health` reports DB status.
 - [ ] **T02 Auth (api)**: User model; email magic-link sign-in (link logged to console in dev); JWT access token (15 min) + rotating refresh token in an httpOnly cookie. Routes under `/api/auth`.
   - Done when: tests cover request link, verify link, refresh, logout, expired and reused tokens.

@@ -16,6 +16,8 @@ class Settings:
     database_url: str = os.getenv(
         "DATABASE_URL", "postgresql+asyncpg://tidepool:tidepool@localhost:5432/tidepool"
     )
+    # Used by the test suite. Empty means DATABASE_URL with "_test" appended to the database name.
+    test_database_url: str = os.getenv("TEST_DATABASE_URL", "")
     glm_base_url: str = os.getenv("GLM_BASE_URL", "")
     glm_api_key: str = os.getenv("GLM_API_KEY", "")
     glm_model: str = os.getenv("GLM_MODEL", "")
