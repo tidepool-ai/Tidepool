@@ -51,6 +51,8 @@ export function contrastRatio(a: string, b: string): number {
 }
 
 const themes = parseThemes(readFileSync(THEMES_FILE, 'utf8'));
+// Rail icons use one global color, so the rail must stay dark enough in every theme.
+const onRail = readFileSync('src/styles.scss', 'utf8').match(/--color-on-rail:\s*(#[0-9a-fA-F]{6})/)?.[1] ?? '';
 const cases = SCHEMES.flatMap((scheme) => (['light', 'dark'] as const).map((mode) => `${scheme}/${mode}`));
 
 describe('theme contrast (DESIGN-SYSTEM.md 5.7)', () => {
@@ -69,6 +71,10 @@ describe('theme contrast (DESIGN-SYSTEM.md 5.7)', () => {
 
     it('defines every color token', () => {
       expect(Object.keys(tokens).sort()).toEqual([...TOKENS].sort());
+    });
+
+    it('rail icons (on-rail on rail) are at least 3:1', () => {
+      expect(contrastRatio(onRail, tokens['rail'])).toBeGreaterThanOrEqual(3);
     });
 
     it.each(PAIRS)('%s on %s is at least %s:1', (foreground, background, minimum) => {

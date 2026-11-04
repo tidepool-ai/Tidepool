@@ -29,7 +29,7 @@ alembic upgrade head
 export JWT_SECRET=dev-only-secret REFRESH_COOKIE_SECURE=false
 uvicorn app.main:app --reload   # sign-in links are printed to this console
 
-# Web: http://localhost:4200
+# Web: http://localhost:4200 (proxies /api to the API on :8000, so the auth cookie stays same-origin)
 cd web
 npm ci
 npm start
