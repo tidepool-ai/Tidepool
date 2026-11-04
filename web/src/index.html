@@ -5,6 +5,25 @@
   <title>Tidepool</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    // Apply the saved appearance before first paint so the page never flashes the wrong theme.
+    // Mirrors sanitizeAppearance() in src/app/core/theme/theme.service.ts.
+    (function () {
+      var root = document.documentElement;
+      var a = {};
+      try {
+        a = JSON.parse(localStorage.getItem('tidepool.appearance') || '{}') || {};
+      } catch (e) {}
+      var schemes = ['tidepool', 'graphite', 'orchard', 'dusk', 'paper'];
+      var sizes = ['small', 'default', 'large'];
+      var osDark = !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var dark = a.mode === 'dark' || (a.mode !== 'light' && osDark);
+      root.dataset.scheme = schemes.indexOf(a.scheme) >= 0 ? a.scheme : 'tidepool';
+      root.dataset.mode = dark ? 'dark' : 'light';
+      root.dataset.textSize = sizes.indexOf(a.textSize) >= 0 ? a.textSize : 'default';
+      root.dataset.contrast = a.highContrast === true ? 'high' : 'normal';
+    })();
+  </script>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=JetBrains+Mono&display=swap">

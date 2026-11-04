@@ -10,7 +10,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: `alembic upgrade head` runs; a pytest fixture gives each test a clean DB; `/health` reports DB status.
 - [x] **T02 Auth (api)**: User model; email magic-link sign-in (link logged to console in dev); JWT access token (15 min) + rotating refresh token in an httpOnly cookie. Routes under `/api/auth`.
   - Done when: tests cover request link, verify link, refresh, logout, expired and reused tokens.
-- [ ] **T03 Theme service (web)**: All 5 schemes x light/dark tokens from DESIGN-SYSTEM.md section 5; `ThemeService` (signals) with scheme, mode (light/dark/system), text size, high contrast; saved to localStorage; no-flash script in `index.html`.
+- [x] **T03 Theme service (web)**: All 5 schemes x light/dark tokens from DESIGN-SYSTEM.md section 5; `ThemeService` (signals) with scheme, mode (light/dark/system), text size, high contrast; saved to localStorage; no-flash script in `index.html`.
   - Done when: unit tests cover each setting and system-mode switching; contrast test asserts section 5.7 ratios.
 - [ ] **T04 App shell (web)**: Icon rail + spaces panel + main outlet per the Home design; routes `/login`, `/home`, `/p/:pageId`, `/settings/appearance` (lazy); auth guard; login page calling T02.
   - Done when: guard redirects signed-out users; shell is keyboard navigable; skip link present.
