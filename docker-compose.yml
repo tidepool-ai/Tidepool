@@ -1,17 +1,19 @@
-# Local services for development: `docker compose up -d db`
+# Local Postgres for development: `docker compose up -d db`
+# Credentials come from a root .env file (git-ignored) or fall back to local-only defaults.
 services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: tidepool
-      POSTGRES_PASSWORD: tidepool
-      POSTGRES_DB: tidepool
+      POSTGRES_USER: ${POSTGRES_USER:-tidepool}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tidepool}
+      POSTGRES_DB: ${POSTGRES_DB:-tidepool}
     ports:
-      - "5432:5432"
+      # Listen on this machine only, so the database isn't reachable from your network.
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tidepool -d tidepool"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10

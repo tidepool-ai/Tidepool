@@ -52,6 +52,8 @@ about a minute, and may time out once. Try again.
 
 ## Settings reference
 
+All variables, with local setup and what to do if one leaks: [ENVIRONMENT.md](ENVIRONMENT.md).
+
 | Variable | Where | Value |
 | --- | --- | --- |
 | `DATABASE_URL` | Render | Neon direct connection string |

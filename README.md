@@ -14,6 +14,7 @@ A block-based workspace with AI: nested pages, databases with Table and Board le
 - [Design system (Tidepool tokens, 5 color schemes)](docs/DESIGN-SYSTEM.md)
 - [Backlog](docs/backlog.md): the MVP as small, ordered, one-PR tasks
 - [Deploying](docs/DEPLOY.md): Neon + Render + Vercel test deployment
+- [Environment variables and secrets](docs/ENVIRONMENT.md): every setting, where to set it
 - [CLAUDE.md](CLAUDE.md): rules every coding session follows
 
 ## Run locally

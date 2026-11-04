@@ -33,7 +33,15 @@ def normalize_database_url(url: str) -> str:
     return urlunsplit(parts._replace(query=urlencode(query)))
 
 
-_APP_ENV = os.getenv("APP_ENV", "development")
+# `or`, not a getenv default: an empty value (as in .env.example) means "use the default".
+_APP_ENV = os.getenv("APP_ENV") or "development"
+
+
+def magic_link_logging(value: str | None, app_env: str) -> bool:
+    """LOG_MAGIC_LINKS: an explicit value wins; unset or empty means on in development only."""
+    if value is None or not value.strip():
+        return app_env == "development"
+    return _flag(value)
 
 
 @dataclass(frozen=True)
@@ -49,8 +57,8 @@ class Settings:
     app_env: str = _APP_ENV
     # No email sender yet, so sign-in links can only be logged. On by default in development.
     # Turning it on elsewhere lets anyone who can read the logs sign in as any user: test deploys only.
-    log_magic_links: bool = _flag(
-        os.getenv("LOG_MAGIC_LINKS", "true" if _APP_ENV == "development" else "false")
+    log_magic_links: bool = field(
+        default_factory=lambda: magic_link_logging(os.getenv("LOG_MAGIC_LINKS"), _APP_ENV)
     )
     # Web app origin, used to build magic links.
     app_url: str = os.getenv("APP_URL", "http://localhost:4200")
