@@ -19,13 +19,18 @@ class Role(StrEnum):
     GUEST = "guest"
 
 
+# clock_timestamp(), not now(): now() is the transaction start, so rows made in one transaction
+# would tie and "oldest first" ordering would be random.
+CREATED_AT_DEFAULT = func.clock_timestamp()
+
+
 class Workspace(Base):
     __tablename__ = "workspaces"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100))
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=CREATED_AT_DEFAULT)
 
 
 class Member(Base):
@@ -39,4 +44,4 @@ class Member(Base):
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
     )
     role: Mapped[str] = mapped_column(String(16))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=CREATED_AT_DEFAULT)
