@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.auth import service
-from app.config import normalize_database_url, settings
+from app.config import magic_link_logging, normalize_database_url, settings
 
 NEON = "postgresql://alex:secret@ep-cool-name-123.eu-central-1.aws.neon.tech/tidepool?sslmode=require&channel_binding=require"
 
@@ -52,6 +52,21 @@ async def test_converted_url_connects(database_url: str) -> None:
             assert await connection.scalar(text("SELECT 1")) == 1
     finally:
         await engine.dispose()
+
+
+@pytest.mark.parametrize(
+    ("value", "app_env", "expected"),
+    [
+        (None, "development", True),
+        ("", "development", True),  # LOG_MAGIC_LINKS= as copied from .env.example
+        ("  ", "production", False),
+        (None, "production", False),
+        ("true", "production", True),
+        ("false", "development", False),
+    ],
+)
+def test_magic_link_logging_default(value: str | None, app_env: str, expected: bool) -> None:
+    assert magic_link_logging(value, app_env) is expected
 
 
 def test_magic_links_are_not_logged_when_turned_off(
