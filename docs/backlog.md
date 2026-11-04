@@ -8,7 +8,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
 - [x] **T00 Scaffold**: Angular app in `web/`, FastAPI in `api/`, CI, CLAUDE.md.
 - [x] **T01 Database setup (api)**: Async SQLAlchemy 2 + Alembic + PostgreSQL. Add `docker-compose.yml` with Postgres 16. CI `api` job gets a Postgres service.
   - Done when: `alembic upgrade head` runs; a pytest fixture gives each test a clean DB; `/health` reports DB status.
-- [ ] **T02 Auth (api)**: User model; email magic-link sign-in (link logged to console in dev); JWT access token (15 min) + rotating refresh token in an httpOnly cookie. Routes under `/api/auth`.
+- [x] **T02 Auth (api)**: User model; email magic-link sign-in (link logged to console in dev); JWT access token (15 min) + rotating refresh token in an httpOnly cookie. Routes under `/api/auth`.
   - Done when: tests cover request link, verify link, refresh, logout, expired and reused tokens.
 - [ ] **T03 Theme service (web)**: All 5 schemes x light/dark tokens from DESIGN-SYSTEM.md section 5; `ThemeService` (signals) with scheme, mode (light/dark/system), text size, high contrast; saved to localStorage; no-flash script in `index.html`.
   - Done when: unit tests cover each setting and system-mode switching; contrast test asserts section 5.7 ratios.

@@ -26,7 +26,8 @@ cd api
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 alembic upgrade head
-uvicorn app.main:app --reload
+export JWT_SECRET=dev-only-secret REFRESH_COOKIE_SECURE=false
+uvicorn app.main:app --reload   # sign-in links are printed to this console
 
 # Web: http://localhost:4200
 cd web
