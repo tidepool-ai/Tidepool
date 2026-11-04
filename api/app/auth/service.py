@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import MagicLink, RefreshToken, User
 from app.config import settings
+from app.workspaces.service import create_personal_workspace
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,7 @@ def deliver_magic_link(email: str, url: str) -> None:
 
 
 async def consume_magic_link(session: AsyncSession, token: str) -> User:
-    """Mark the link used and return its user, creating the user on first sign-in."""
+    """Mark the link used and return its user. First sign-in creates the user and a personal workspace."""
     link = await session.scalar(
         select(MagicLink).where(MagicLink.token_hash == hash_token(token)).with_for_update()
     )
@@ -76,7 +77,8 @@ async def consume_magic_link(session: AsyncSession, token: str) -> User:
     if user is None:
         user = User(email=link.email)
         session.add(user)
-    await session.flush()
+        await session.flush()
+        await create_personal_workspace(session, user)
     return user
 
 
