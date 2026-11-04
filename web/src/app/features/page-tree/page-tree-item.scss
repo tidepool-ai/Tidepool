@@ -1,0 +1,122 @@
+:host {
+  display: block;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding-inline-end: 4px;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+}
+
+.row.active {
+  background: var(--color-soft);
+  color: var(--color-soft-text);
+  font-weight: 600;
+}
+
+.icon-button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.toggle svg {
+  transition: transform 150ms ease;
+}
+
+.toggle svg.open {
+  transform: rotate(90deg);
+}
+
+.title {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.untitled {
+  color: var(--color-muted);
+}
+
+.title-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 6px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+// Quiet chrome: row actions show on hover or when anything in the row has focus.
+.actions {
+  display: flex;
+  opacity: 0;
+}
+
+.row:hover .actions,
+.row:focus-within .actions {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .actions {
+    opacity: 1;
+  }
+}
+
+.note {
+  margin: 4px 0;
+  color: var(--color-muted);
+  font-size: 13px;
+}

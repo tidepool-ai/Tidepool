@@ -1,0 +1,70 @@
+@if (page(); as page) {
+  <div class="row" [class.active]="rla.isActive" [style.padding-inline-start.px]="indent()">
+    <button
+      type="button"
+      class="icon-button toggle"
+      [attr.aria-expanded]="expanded()"
+      [attr.aria-label]="(expanded() ? 'Collapse ' : 'Expand ') + name()"
+      (click)="store.toggle(pageId())"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24" [class.open]="expanded()"><path d="m9 6 6 6-6 6" /></svg>
+    </button>
+
+    <a
+      #link
+      #rla="routerLinkActive"
+      class="title"
+      [routerLink]="['/p', page.id]"
+      routerLinkActive
+      ariaCurrentWhenActive="page"
+      [hidden]="renaming()"
+      (keydown.f2)="startRename($event)"
+    >
+      @if (page.icon) {
+        <span class="emoji" aria-hidden="true">{{ page.icon }}</span>
+      }
+      <span class="text" [class.untitled]="!page.title.trim()">{{ name() }}</span>
+    </a>
+
+    @if (renaming()) {
+      <input
+        #titleInput
+        class="title-input"
+        aria-label="Page title"
+        maxlength="200"
+        [value]="page.title"
+        (keydown.enter)="save(titleInput)"
+        (keydown.escape)="cancel()"
+        (blur)="save(titleInput)"
+      />
+    } @else {
+      <span class="actions">
+        <button type="button" class="icon-button" [attr.aria-label]="'Rename ' + name()" (click)="startRename()">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" /></svg>
+        </button>
+        <button type="button" class="icon-button" [attr.aria-label]="'Add a page inside ' + name()" (click)="addChild()">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+        </button>
+        <button type="button" class="icon-button" [attr.aria-label]="'Move ' + name() + ' to trash'" (click)="trash()">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" /></svg>
+        </button>
+      </span>
+    }
+  </div>
+
+  @if (expanded()) {
+    @if (childIds(); as ids) {
+      @if (ids.length) {
+        <ul role="list">
+          @for (childId of ids; track childId) {
+            <li><app-page-tree-item [pageId]="childId" [level]="level() + 1" /></li>
+          }
+        </ul>
+      } @else {
+        <p class="note" [style.padding-inline-start.px]="indent() + 36">No pages inside</p>
+      }
+    } @else {
+      <p class="note" [style.padding-inline-start.px]="indent() + 36">Loading…</p>
+    }
+  }
+}
