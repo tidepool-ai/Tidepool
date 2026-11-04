@@ -31,6 +31,22 @@ jobs:
   api:
     name: api (lint, test)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: tidepool
+          POSTGRES_PASSWORD: tidepool
+          POSTGRES_DB: tidepool
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tidepool -d tidepool"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://tidepool:tidepool@localhost:5432/tidepool
     defaults:
       run:
         working-directory: api
@@ -44,4 +60,5 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      - run: alembic upgrade head
       - run: pytest -q

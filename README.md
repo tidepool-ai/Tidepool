@@ -18,10 +18,14 @@ A block-based workspace with AI: nested pages, databases with Table and Board le
 ## Run locally
 
 ```bash
+# Database: Postgres 16 on localhost:5432
+docker compose up -d db
+
 # API: http://localhost:8000/health
 cd api
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
+alembic upgrade head
 uvicorn app.main:app --reload
 
 # Web: http://localhost:4200
@@ -36,6 +40,10 @@ npm start
 cd web && npm run lint && npm run test:ci && npm run build
 cd api && ruff check . && ruff format --check . && pytest -q
 ```
+
+API tests need Postgres running (`docker compose up -d db`). They create and migrate a separate `<db>_test` database (override with `TEST_DATABASE_URL`) and roll back each test.
+
+New migration: `cd api && alembic revision --autogenerate -m "<what changed>"` (import new models in `alembic/env.py`).
 
 ## How work gets done
 
