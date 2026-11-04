@@ -21,9 +21,9 @@ HEALTH_DB_TIMEOUT_SECONDS = 2
 
 
 def _configure_dev_logging() -> None:
-    """Show app INFO logs (such as magic links) on the console in development."""
+    """Show app INFO logs (such as magic links) on the console in development or when links are logged."""
     app_logger = logging.getLogger("app")
-    if settings.app_env == "development" and not app_logger.handlers:
+    if (settings.app_env == "development" or settings.log_magic_links) and not app_logger.handlers:
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("%(levelname)s [%(name)s] %(message)s"))
         app_logger.addHandler(handler)

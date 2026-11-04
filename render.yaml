@@ -1,0 +1,30 @@
+# Render blueprint for the API (https://render.com/docs/blueprint-spec).
+# New > Blueprint, pick this repo, then fill in the values marked "sync: false". See docs/DEPLOY.md.
+services:
+  - type: web
+    name: tidepool-api
+    runtime: python
+    plan: free
+    rootDir: api
+    buildCommand: pip install -r requirements.txt
+    # Migrations run on every start, so a deploy brings the database up to date.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.7
+      - key: DATABASE_URL
+        sync: false # Neon connection string (the direct one, not "pooled")
+      - key: JWT_SECRET
+        generateValue: true
+      - key: APP_ENV
+        value: production
+      - key: APP_URL
+        sync: false # the Vercel URL, e.g. https://tidepool.vercel.app
+      - key: CORS_ORIGINS
+        sync: false # same Vercel URL
+      - key: REFRESH_COOKIE_SECURE
+        value: "true"
+      # No email sender yet: sign-in links go to the Render logs. Test deploys only (see docs/DEPLOY.md).
+      - key: LOG_MAGIC_LINKS
+        value: "true"
