@@ -28,10 +28,11 @@ describe('VerifyPage', () => {
     verify.flush(tokenResponse());
     await settle();
     http.expectOne('/api/auth/me').flush(USER);
-    await settle();
-    await harness.fixture.whenStable();
+    // Navigating loads the shell and page code lazily, which takes a few ticks.
+    const router = TestBed.inject(Router);
+    for (let i = 0; i < 50 && router.url !== '/p/abc'; i++) await settle();
 
-    expect(TestBed.inject(Router).url).toBe('/p/abc');
+    expect(router.url).toBe('/p/abc');
     expect(localStorage.getItem('tidepool.returnUrl')).toBeNull();
   });
 

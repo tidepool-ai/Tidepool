@@ -23,7 +23,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
 
 ## Phase 1: Editor
 
-- [ ] **T08 Editor core (web)**: Tiptap (ProseMirror) wrapped in an Angular component at `/p/:pageId`; title + paragraph, H1–H3, bulleted, numbered lists; content saved as JSON.
+- [x] **T08 Editor core (web)**: Tiptap (ProseMirror) wrapped in an Angular component at `/p/:pageId`; title + paragraph, H1–H3, bulleted, numbered lists; content saved as JSON.
   - Done when: typing, undo/redo and lists work; unit tests for the wrapper.
 - [ ] **T09 Save content (api + web)**: `GET/PUT /api/pages/{id}/content` (JSON); debounced autosave (1 s) with a "Saved" indicator.
   - Done when: reload restores content; API tests cover permissions and size limit.

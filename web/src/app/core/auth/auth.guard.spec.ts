@@ -43,7 +43,8 @@ describe('auth guards and routes', () => {
     await harness.navigateByUrl('/p/abc123');
 
     expect(url()).toBe('/p/abc123');
-    expect(harness.routeNativeElement?.textContent).toContain('Page abc123');
+    // The page view asks for the page it was opened with.
+    http.expectOne('/api/pages/abc123');
   });
 
   it('restores the session from the refresh cookie instead of redirecting', async () => {
