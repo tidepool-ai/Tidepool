@@ -1,6 +1,7 @@
 """Tidepool API entry point."""
 
 import asyncio
+import logging
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
@@ -10,13 +11,25 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.router import router as auth_router
 from app.config import settings
 from app.db import get_session
 
 HEALTH_DB_TIMEOUT_SECONDS = 2
 
 
+def _configure_dev_logging() -> None:
+    """Show app INFO logs (such as magic links) on the console in development."""
+    app_logger = logging.getLogger("app")
+    if settings.app_env == "development" and not app_logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s [%(name)s] %(message)s"))
+        app_logger.addHandler(handler)
+        app_logger.setLevel(logging.INFO)
+
+
 def create_app() -> FastAPI:
+    _configure_dev_logging()
     app = FastAPI(title="Tidepool API", version="0.1.0")
 
     app.add_middleware(
@@ -26,6 +39,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    app.include_router(auth_router)
 
     @app.get("/health", tags=["system"])
     async def health(session: Annotated[AsyncSession, Depends(get_session)]) -> JSONResponse:

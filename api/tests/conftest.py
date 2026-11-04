@@ -98,7 +98,7 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
 
     app.dependency_overrides[get_session] = override_get_session
     try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as http:
             yield http
     finally:
         app.dependency_overrides.clear()
