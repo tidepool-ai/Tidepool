@@ -27,7 +27,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: typing, undo/redo and lists work; unit tests for the wrapper.
 - [x] **T09 Save content (api + web)**: `GET/PUT /api/pages/{id}/content` (JSON); debounced autosave (1 s) with a "Saved" indicator.
   - Done when: reload restores content; API tests cover permissions and size limit.
-- [ ] **T10 Slash menu (web)**: `/` opens the menu (All, Blocks, AI, Embeds tabs), filters as you type, Up/Down/Enter/Esc, inserts the block.
+- [x] **T10 Slash menu (web)**: `/` opens the menu (All, Blocks, AI, Embeds tabs), filters as you type, Up/Down/Enter/Esc, inserts the block.
   - Done when: tests cover filtering and keyboard selection.
 - [ ] **T11 More blocks (web)**: To-do, toggle, quote, callout, divider, code (with language + highlighting); Markdown shortcuts per FR-5.
   - Done when: each shortcut has a test.

@@ -14,6 +14,9 @@ import {
 import { Editor, Extensions, JSONContent } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
 import StarterKit from '@tiptap/starter-kit';
+import { SlashMenuView } from './slash/slash-menu';
+import { SlashMenuController } from './slash/slash-menu.controller';
+import { SlashMenu, exitSuggestion, slashMenuKey } from './slash/slash-menu.extension';
 
 /** An empty document: one empty paragraph. */
 export const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] };
@@ -23,8 +26,9 @@ export const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragrap
  * Markdown shortcuts come with StarterKit ("# ", "## ", "### ", "- ", "1. ").
  * Quote, code block and divider arrive with T11; links later.
  */
-export function editorExtensions(placeholder: string): Extensions {
+export function editorExtensions(placeholder: string, slash: SlashMenuController | null = null): Extensions {
   return [
+    SlashMenu.configure({ controller: slash }),
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
       blockquote: false,
@@ -49,7 +53,8 @@ export function editorExtensions(placeholder: string): Extensions {
   // ProseMirror renders its own DOM, so the content styles can't be view-encapsulated.
   encapsulation: ViewEncapsulation.None,
   styleUrl: './editor.scss',
-  template: '<div class="tp-editor" #host></div>',
+  imports: [SlashMenuView],
+  template: '<div class="tp-editor" #host></div><app-slash-menu [controller]="slash" />',
 })
 export class EditorComponent {
   readonly content = input<JSONContent | null>(null);
@@ -63,12 +68,16 @@ export class EditorComponent {
 
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
   private editor: Editor | null = null;
+  /** The slash menu ("/"), T10. */
+  protected readonly slash = new SlashMenuController(() => {
+    if (this.editor) exitSuggestion(this.editor.view, slashMenuKey);
+  });
 
   constructor() {
     afterNextRender(() => {
       this.editor = new Editor({
         element: this.host().nativeElement,
-        extensions: editorExtensions(this.placeholder()),
+        extensions: editorExtensions(this.placeholder(), this.slash),
         content: this.content() ?? EMPTY_DOC,
         editable: this.editable(),
         editorProps: {
@@ -80,8 +89,28 @@ export class EditorComponent {
           },
         },
         onUpdate: ({ editor }) => this.contentChange.emit(editor.getJSON()),
+        // Leaving the editor closes the menu (clicks inside the menu don't blur the editor).
+        onBlur: () => {
+          if (this.slash.open()) this.slash.keyDown(new KeyboardEvent('keydown', { key: 'Escape' }));
+        },
       });
       this.ready.emit(this.editor);
+    });
+    // Point assistive tech from the editor (which keeps focus) to the highlighted menu option.
+    effect(() => {
+      const open = this.slash.open();
+      const hasItems = this.slash.items().length > 0;
+      const active = this.slash.activeIndex();
+      const dom = this.editor?.view.dom;
+      if (!dom) return;
+      if (open) {
+        dom.setAttribute('aria-controls', this.slash.listId);
+        if (hasItems) dom.setAttribute('aria-activedescendant', this.slash.optionId(active));
+        else dom.removeAttribute('aria-activedescendant');
+      } else {
+        dom.removeAttribute('aria-controls');
+        dom.removeAttribute('aria-activedescendant');
+      }
     });
     effect(() => {
       const editable = this.editable();
