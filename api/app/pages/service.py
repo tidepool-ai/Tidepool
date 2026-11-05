@@ -7,7 +7,7 @@ of its workspace. Guests see no pages yet, because nothing can be shared with th
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import ColumnElement, bindparam, select, text, update
+from sqlalchemy import ColumnElement, bindparam, exists, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,12 +51,22 @@ async def get_page(
     return page
 
 
-async def _valid_parent(session: AsyncSession, workspace_id: uuid.UUID, parent_id: uuid.UUID) -> Page:
+async def hosts_database(session: AsyncSession, page_id: uuid.UUID) -> bool:
+    from app.databases.models import Database  # databases build on pages
+
+    return await session.scalar(select(exists().where(Database.page_id == page_id))) or False
+
+
+async def _valid_parent(
+    session: AsyncSession, workspace_id: uuid.UUID, parent_id: uuid.UUID, *, for_row: bool = False
+) -> Page:
     parent = await session.scalar(select(Page).where(Page.id == parent_id).with_for_update())
     if parent is None or parent.workspace_id != workspace_id:
         raise InvalidParentError("parent_id is not a page in this workspace")
     if parent.archived_at is not None:
         raise PageConflictError("The parent page is in the trash")
+    if not for_row and (parent.database_id is not None or await hosts_database(session, parent.id)):
+        raise InvalidParentError("Pages can't go inside a database or its rows; add a row instead")
     return parent
 
 
@@ -66,10 +76,14 @@ async def create_page(
     workspace_id: uuid.UUID,
     parent_id: uuid.UUID | None,
     fields: dict[str, object],
+    *,
+    database_id: uuid.UUID | None = None,
 ) -> Page:
+    """Create a page; with `database_id`, a row of that database (under the database's page)."""
     if not await can_access_workspace(session, workspace_id, user_id):
         raise PageNotFoundError
-    parent = await _valid_parent(session, workspace_id, parent_id) if parent_id else None
+    for_row = database_id is not None
+    parent = await _valid_parent(session, workspace_id, parent_id, for_row=for_row) if parent_id else None
     page_id = uuid.uuid4()
     label = path_label(page_id)
     page = Page(
@@ -78,6 +92,7 @@ async def create_page(
         parent_id=parent_id,
         path=f"{parent.path}.{label}" if parent else label,
         created_by=user_id,
+        database_id=database_id,
         **fields,
     )
     session.add(page)
@@ -89,6 +104,8 @@ async def create_page(
 async def update_page(session: AsyncSession, page: Page, fields: dict[str, object]) -> Page:
     if page.archived_at is not None:
         raise PageConflictError("Restore the page before changing it")
+    if "parent_id" in fields and page.database_id is not None and fields["parent_id"] != page.parent_id:
+        raise InvalidParentError("Rows stay in their database")
     if "parent_id" in fields:
         parent_id = fields.pop("parent_id")
         assert parent_id is None or isinstance(parent_id, uuid.UUID)
@@ -149,6 +166,10 @@ async def restore_page(session: AsyncSession, page: Page) -> Page:
     """
     if page.archived_at is None:
         return page
+    if page.database_id is not None:
+        database_page = await session.get(Page, page.parent_id)
+        if database_page is None or database_page.archived_at is not None:
+            raise PageConflictError("Restore the database first")
     await session.execute(
         update(Page)
         .where(_subtree(page), Page.archived_at == page.archived_at)
@@ -167,7 +188,7 @@ async def restore_page(session: AsyncSession, page: Page) -> Page:
 async def list_children(session: AsyncSession, parent: Page) -> list[Page]:
     rows = await session.scalars(
         select(Page)
-        .where(Page.parent_id == parent.id, Page.archived_at.is_(None))
+        .where(Page.parent_id == parent.id, Page.archived_at.is_(None), Page.database_id.is_(None))
         .order_by(Page.created_at, Page.id)
     )
     return list(rows)
@@ -176,7 +197,12 @@ async def list_children(session: AsyncSession, parent: Page) -> list[Page]:
 async def list_top_level(session: AsyncSession, workspace_id: uuid.UUID) -> list[Page]:
     rows = await session.scalars(
         select(Page)
-        .where(Page.workspace_id == workspace_id, Page.parent_id.is_(None), Page.archived_at.is_(None))
+        .where(
+            Page.workspace_id == workspace_id,
+            Page.parent_id.is_(None),
+            Page.archived_at.is_(None),
+            Page.database_id.is_(None),
+        )
         .order_by(Page.created_at, Page.id)
     )
     return list(rows)

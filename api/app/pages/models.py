@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import UserDefinedType
@@ -41,6 +41,10 @@ class Page(Base):
     cover: Mapped[str | None] = mapped_column(String(2048))
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    # Set when the page is a row of a database (T16); its parent is then the database's page.
+    database_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("databases.id", ondelete="CASCADE"))
+    # A row's property values, keyed by property id (see app/databases/properties.py).
+    properties: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'::jsonb"), default=dict)
     # clock_timestamp(): real write time, so sibling order is stable within one transaction.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.clock_timestamp()

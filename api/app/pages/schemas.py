@@ -39,6 +39,8 @@ class PageOut(BaseModel):
     icon: str | None
     cover: str | None
     archived_at: datetime | None
+    # Set for database rows (T16).
+    database_id: uuid.UUID | None = None
     created_at: datetime
     updated_at: datetime
 
