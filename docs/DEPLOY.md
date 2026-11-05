@@ -32,8 +32,9 @@ The first deploy creates the tables and enables the `ltree` extension, which Neo
    - `JWT_SECRET` is generated for you.
 3. Deploy, then open `https://<service>.onrender.com/health`. It should return
    `{"status":"ok","database":"ok"}`.
-4. If Render gave the service a different URL than `https://tidepool-api.onrender.com`, change the
-   `/api/:path*` destination in `web/vercel.json` to match and push.
+4. If Render gave the service a different URL than the one in `web/vercel.json` (currently
+   `https://tidepool-api-bspw.onrender.com`), change the `/api/:path*` destination there to match
+   and push.
 
 Free Render services sleep after 15 minutes without traffic; the first request afterwards can take
 about a minute, and may time out once. Try again.
