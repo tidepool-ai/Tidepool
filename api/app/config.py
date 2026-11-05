@@ -75,6 +75,15 @@ class Settings:
     # onboarding@resend.dev only delivers to the Resend account's own email address.
     resend_api_key: str = os.getenv("RESEND_API_KEY", "")
     email_from: str = os.getenv("EMAIL_FROM") or "Tidepool <onboarding@resend.dev>"
+    # Image uploads (T13): any S3-compatible bucket that supports POST policy uploads (AWS S3, MinIO).
+    # Empty S3_BUCKET turns uploads off. S3_ENDPOINT_URL is only for non-AWS services such as MinIO.
+    s3_bucket: str = os.getenv("S3_BUCKET", "")
+    s3_endpoint_url: str = os.getenv("S3_ENDPOINT_URL", "")
+    s3_region: str = os.getenv("S3_REGION") or "us-east-1"
+    s3_access_key_id: str = os.getenv("S3_ACCESS_KEY_ID", "")
+    s3_secret_access_key: str = os.getenv("S3_SECRET_ACCESS_KEY", "")
+    # Largest image accepted, in bytes (25 MB, PRD security table).
+    max_upload_bytes: int = int(os.getenv("MAX_UPLOAD_BYTES") or 25 * 1024 * 1024)
     glm_base_url: str = os.getenv("GLM_BASE_URL", "")
     glm_api_key: str = os.getenv("GLM_API_KEY", "")
     glm_model: str = os.getenv("GLM_MODEL", "")

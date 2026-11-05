@@ -19,6 +19,11 @@ on your own machine or exist for one CI run.
 | `RESEND_API_KEY` | **Yes** | For real users | *(empty)* | Sends sign-in emails through Resend. With it set, links are never logged. |
 | `EMAIL_FROM` | No | With your own domain | `Tidepool <onboarding@resend.dev>` | Sender address. Resend's test sender only delivers to your Resend account's email. |
 | `MAX_PAGE_CONTENT_BYTES` | No | No | `1000000` | Largest page document accepted, in bytes of JSON; bigger saves get `413`. |
+| `S3_BUCKET` | No | For images | *(empty: uploads off)* | Bucket for uploaded images. Must support POST policy uploads (AWS S3, MinIO). |
+| `S3_REGION` | No | With AWS | `us-east-1` | The bucket's region. |
+| `S3_ENDPOINT_URL` | No | Not on AWS | *(empty)* | For MinIO or the local dev storage, e.g. `http://127.0.0.1:9000`. Empty means AWS. |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `S3_SECRET_ACCESS_KEY` **yes** | For images | *(empty)* | Key that may put and get objects under `pages/` in the bucket. |
+| `MAX_UPLOAD_BYTES` | No | No | `26214400` (25 MB) | Largest image accepted; the bucket enforces it too. |
 | `TEST_DATABASE_URL` | Yes if set | No | `DATABASE_URL` + `_test` | Test database. It is **dropped and recreated** on every test run; its name must end in `_test`. |
 | `GLM_BASE_URL`, `GLM_API_KEY`, `GLM_MODEL` | `GLM_API_KEY` **yes** | From T23 | *(empty)* | Hosted GLM model for AI features. The key stays on the server. |
 
@@ -48,7 +53,13 @@ shipped to browsers.
    alembic upgrade head
    uvicorn app.main:app --reload
    ```
-3. Optional: to change the local Docker database login, create a `.env` next to
+3. Optional, for image uploads: in another terminal, start the local dev storage (an S3 emulator
+   from `requirements-dev.txt`; files are kept in memory only), and set the four `S3_*` values it
+   prints in `api/.env`:
+   ```bash
+   cd api && python -m scripts.dev_storage
+   ```
+4. Optional: to change the local Docker database login, create a `.env` next to
    `docker-compose.yml` with `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB`, and use the
    same values in `DATABASE_URL`.
 
@@ -80,4 +91,5 @@ into the workflow file.
 | `JWT_SECRET` | Render → Environment → generate a new value. Everyone is signed out; nothing else breaks. |
 | `GLM_API_KEY` | Revoke it with the provider, create a new one, update Render. |
 | `RESEND_API_KEY` | Resend → **API Keys** → delete it, create a new one, update Render. |
+| `S3_SECRET_ACCESS_KEY` | AWS IAM → the `tidepool-api` user → **Security credentials**: create a new key, update Render, then deactivate and delete the old one. |
 | Anything committed to git | Rotate it as above first. Deleting the commit is not enough once the repo is public. |

@@ -295,3 +295,92 @@
   background: color-mix(in srgb, var(--color-primary) 14%, transparent);
   transition: background-color 600ms ease;
 }
+
+// Image blocks (T13).
+.tp-editor img.tp-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 8px 0;
+  border-radius: var(--radius-md);
+}
+
+.tp-editor img.tp-image.ProseMirror-selectednode {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+// Placeholder while an image uploads, or when it failed.
+.tp-editor .tp-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 12px 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+}
+
+.tp-editor .tp-upload[data-state='error'] {
+  border-style: solid;
+  border-color: var(--color-danger-text);
+  background: var(--color-danger-soft);
+}
+
+.tp-editor .tp-upload-body {
+  flex: 1;
+  min-width: 200px;
+  display: grid;
+  gap: 6px;
+}
+
+.tp-editor .tp-upload-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.tp-editor .tp-upload-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-border);
+}
+
+.tp-editor .tp-upload-bar {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  transition: width 150ms ease;
+}
+
+.tp-editor .tp-upload-percent {
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tp-editor .tp-upload-error {
+  margin: 0;
+  color: var(--color-danger-text);
+}
+
+.tp-editor .tp-upload-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.tp-editor .tp-upload-button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}

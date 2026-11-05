@@ -19,6 +19,7 @@ import { firstValueFrom, of } from 'rxjs';
 import { EMPTY_DOC, EditorComponent } from '../editor/editor';
 import { ApiPage, PageTreeStore } from '../page-tree/page-tree.store';
 import { Autosave } from './autosave';
+import { ImageUploadService, ImageUploader } from '../../core/files/image-upload';
 
 interface PageDetail extends ApiPage {
   archived_at: string | null;
@@ -47,6 +48,7 @@ export class PagePage {
   private readonly tree = inject(PageTreeStore);
   private readonly editor = viewChild(EditorComponent);
   private readonly autosaveDelay = inject(AUTOSAVE_DELAY_MS);
+  private readonly images = inject(ImageUploadService);
 
   readonly pageId = input.required<string>();
   /** #block-<id> in the URL (block menu > Copy link) points at a block to show. */
@@ -65,6 +67,9 @@ export class PagePage {
   /** The latest document as Tiptap JSON. */
   readonly content = signal<JSONContent>(EMPTY_DOC);
   protected readonly titleError = signal(false);
+  /** Pasted, dropped or picked images go to this page's storage (T13). */
+  protected readonly uploadImage: ImageUploader = (file, onProgress) =>
+    this.images.upload(this.pageId(), file, onProgress);
 
   /** One autosave per page, so a pending save always goes to the page it was typed on. */
   readonly autosave = signal<Autosave<JSONContent> | null>(null);
