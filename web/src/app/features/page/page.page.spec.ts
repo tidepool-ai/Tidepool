@@ -218,6 +218,7 @@ describe('PagePage (live editing, T15)', () => {
     it('show the table instead of the editor, without a live document', async () => {
       const tab = await open('p1', { ...page('p1', 'Tasks'), is_database: true });
       expect(server.connections).toHaveLength(0); // nothing to edit live
+      expect(tab.element.classList).toContain('wide'); // tables and boards get more room
       expect(tab.textbox()).toBeNull();
       expect(tab.element.querySelector('app-database-view')).toBeTruthy();
       expect(tab.element.querySelector<HTMLElement>('.status-bar')!.hidden).toBe(true);

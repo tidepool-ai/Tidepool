@@ -29,7 +29,7 @@
   padding: 0 8px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
 }
@@ -53,7 +53,7 @@
   width: 260px;
   padding: 8px;
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: var(--color-bg);
 }
 
 .column-title {
@@ -88,7 +88,7 @@
   padding: 8px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   cursor: grab;
 }
@@ -144,7 +144,7 @@
 .chip {
   padding: 2px 8px;
   border-radius: var(--radius-sm);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
 }
 
@@ -172,11 +172,11 @@
 .chip[data-color='orange'],
 .chip[data-color='yellow'],
 .chip[data-color='brown'] {
-  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-bg));
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-surface));
 }
 
 .chip[data-color='gray'] {
-  background: color-mix(in srgb, var(--color-muted) 18%, var(--color-bg));
+  background: color-mix(in srgb, var(--color-muted) 18%, var(--color-surface));
 }
 
 // CDK drag preview and placeholder.
