@@ -1,14 +1,17 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { stubLayoutForProseMirror } from '../../../testing/prosemirror-jsdom';
-import { settle } from '../../../testing/auth-testing';
 import { By } from '@angular/platform-browser';
+import { JSONContent } from '@tiptap/core';
+import { settle } from '../../../testing/auth-testing';
+import { stubLayoutForProseMirror } from '../../../testing/prosemirror-jsdom';
 import { EMPTY_DOC, EditorComponent } from '../editor/editor';
 import { PageTreeStore } from '../page-tree/page-tree.store';
-import { PagePage } from './page.page';
+import { AUTOSAVE_DELAY_MS, PagePage } from './page.page';
 
+const DELAY = 20;
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const page = (id: string, title: string, archived_at: string | null = null) => ({
   id,
@@ -17,6 +20,15 @@ const page = (id: string, title: string, archived_at: string | null = null) => (
   title,
   icon: null,
   archived_at,
+});
+const saved = (page_id: string, content: JSONContent | null = null) => ({
+  page_id,
+  content,
+  updated_at: content ? '2026-11-04T12:00:00Z' : null,
+});
+const paragraph = (text: string): JSONContent => ({
+  type: 'doc',
+  content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
 });
 
 describe('PagePage', () => {
@@ -29,23 +41,40 @@ describe('PagePage', () => {
     await fixture.whenStable();
   }
 
-  async function open(id: string, response: object | null, status = 200) {
+  async function open(id: string, pageResponse: object | null, content: object | null = saved(id), status = 200) {
     fixture.componentRef.setInput('pageId', id);
     fixture.detectChanges();
     await settle();
-    const request = http.expectOne(`/api/pages/${id}`);
-    if (status === 200) request.flush(response);
-    else request.flush(null, { status, statusText: 'Error' });
+    const pageRequest = http.expectOne(`/api/pages/${id}`);
+    const contentRequest = http.expectOne(`/api/pages/${id}/content`);
+    if (status === 200) pageRequest.flush(pageResponse);
+    else pageRequest.flush(null, { status, statusText: 'Error' });
+    if (content) contentRequest.flush(content);
+    else contentRequest.flush(null, { status: 500, statusText: 'Error' });
     await stable();
   }
 
   const title = () => element.querySelector<HTMLInputElement>('input[aria-label="Page title"]');
   const textbox = () => element.querySelector<HTMLElement>('[role="textbox"]');
+  const saveStatus = () => element.querySelector('.save-status')?.textContent?.trim();
+  const editor = () =>
+    (fixture.debugElement.query(By.directive(EditorComponent))?.componentInstance as EditorComponent | undefined)?.instance();
+
+  /** Type into the editor and wait past the autosave delay; returns the PUT request. */
+  async function typeAndWait(text: string, pageId = 'p1') {
+    editor()!.commands.insertContent(text);
+    await stable();
+    expect(saveStatus()).toBe('Saving…');
+    await wait(DELAY + 10);
+    return http.expectOne((r) => r.method === 'PUT' && r.url === `/api/pages/${pageId}/content`);
+  }
 
   beforeAll(() => stubLayoutForProseMirror());
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: AUTOSAVE_DELAY_MS, useValue: DELAY }],
+    });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(PagePage);
     element = fixture.nativeElement;
@@ -53,90 +82,195 @@ describe('PagePage', () => {
 
   afterEach(() => http.verify());
 
-  it('shows the page title and an empty editor', async () => {
-    await open('p1', page('p1', 'Roadmap'));
-    expect(title()!.value).toBe('Roadmap');
-    expect(title()!.placeholder).toBe('Untitled');
-    expect(textbox()).toBeTruthy();
-    expect(fixture.componentInstance.content()).toEqual(EMPTY_DOC);
+  it('uses a 1 second autosave delay by default', () => {
+    TestBed.resetTestingModule();
+    expect(TestBed.inject(AUTOSAVE_DELAY_MS)).toBe(1000);
   });
 
-  it('saves a new title on Enter, updates the sidebar, and moves to the content', async () => {
-    const tree = TestBed.inject(PageTreeStore);
-    const applyTitle = vi.spyOn(tree, 'applyTitle');
-    await open('p1', page('p1', ''));
+  describe('loading', () => {
+    it('shows the title and an empty editor for a page that was never saved', async () => {
+      await open('p1', page('p1', 'Roadmap'));
+      expect(title()!.value).toBe('Roadmap');
+      expect(textbox()).toBeTruthy();
+      expect(editor()!.getText()).toBe('');
+      expect(saveStatus()).toBe('');
+    });
 
-    title()!.value = '  Launch plan ';
-    title()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    await settle();
-    const request = http.expectOne('/api/pages/p1');
-    expect(request.request.method).toBe('PATCH');
-    expect(request.request.body).toEqual({ title: 'Launch plan' });
-    request.flush(page('p1', 'Launch plan'));
-    await stable();
+    it('restores saved content into the editor', async () => {
+      await open('p1', page('p1', 'Notes'), saved('p1', paragraph('Hello again')));
+      expect(textbox()!.textContent).toContain('Hello again');
+      http.expectNone((r) => r.method === 'PUT'); // loading isn't an edit
+    });
 
-    expect(applyTitle).toHaveBeenCalledWith('p1', 'Launch plan');
-    await nextFrame(); // Tiptap moves focus on the next animation frame
-    expect(document.activeElement).toBe(textbox());
-  });
+    it('never shows an editor if the content fails to load, so nothing gets overwritten', async () => {
+      await open('p1', page('p1', 'Notes'), null);
+      expect(textbox()).toBeNull();
+      expect(element.querySelector('[role="alert"]')!.textContent).toContain("Couldn't load this page's content");
 
-  it('saves on blur, but not when the title did not change', async () => {
-    await open('p1', page('p1', 'Same'));
-    title()!.dispatchEvent(new FocusEvent('blur'));
-    await settle();
-    http.expectNone('/api/pages/p1');
+      element.querySelector<HTMLButtonElement>('.link-button')!.click();
+      await settle();
+      http.expectOne('/api/pages/p1/content').flush(saved('p1', paragraph('Back')));
+      await stable();
+      expect(textbox()!.textContent).toContain('Back');
+    });
 
-    title()!.value = 'Changed';
-    title()!.dispatchEvent(new FocusEvent('blur'));
-    await settle();
-    http.expectOne('/api/pages/p1').flush(page('p1', 'Changed'));
-    await stable();
-  });
+    it('ignores content that belongs to another page', async () => {
+      await open('p1', page('p1', 'Notes'), saved('other', paragraph('Wrong page')));
+      expect(textbox()).toBeNull();
+    });
 
-  it('puts the old title back and says so when saving fails', async () => {
-    await open('p1', page('p1', 'Old'));
-    title()!.value = 'New';
-    title()!.dispatchEvent(new FocusEvent('blur'));
-    await settle();
-    http.expectOne('/api/pages/p1').flush(null, { status: 409, statusText: 'Conflict' });
-    await stable();
-
-    expect(title()!.value).toBe('Old');
-    const alert = element.querySelector('[role="alert"]')!;
-    expect(alert.textContent).toContain("Couldn't save the title");
-    expect(title()!.getAttribute('aria-describedby')).toBe(alert.id);
-  });
-
-  it('keeps the content as JSON while typing', async () => {
-    await open('p1', page('p1', 'Notes'));
-    const editor = fixture.debugElement.query(By.directive(EditorComponent)).componentInstance as EditorComponent;
-    // Typing reaches the page through the editor's update event.
-    editor.instance()!.commands.insertContent('Hi');
-    await stable();
-    expect(fixture.componentInstance.content()).toEqual({
-      type: 'doc',
-      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hi' }] }],
+    it('explains a missing or inaccessible page', async () => {
+      await open('nope', null, saved('nope'), 404);
+      expect(element.querySelector('h1')!.textContent).toContain('Page not found');
+      expect(textbox()).toBeNull();
     });
   });
 
-  it('starts a fresh editor (and undo history) for another page', async () => {
+  describe('autosave', () => {
+    it('saves the document as JSON after a pause and shows "Saved"', async () => {
+      await open('p1', page('p1', 'Notes'));
+      const request = await typeAndWait('Hi');
+
+      expect(request.request.body).toEqual({ content: paragraph('Hi') });
+      request.flush(saved('p1', paragraph('Hi')));
+      await stable();
+      expect(saveStatus()).toBe('Saved');
+      expect(fixture.componentInstance.content()).toEqual(paragraph('Hi'));
+    });
+
+    it('announces the save state politely to screen readers', async () => {
+      await open('p1', page('p1', 'Notes'));
+      const status = element.querySelector('.save-status')!;
+      expect(status.getAttribute('role')).toBe('status');
+      expect(status.getAttribute('aria-live')).toBe('polite');
+    });
+
+    it('says when saving failed and retries on request', async () => {
+      await open('p1', page('p1', 'Notes'));
+      (await typeAndWait('Hi')).flush(null, { status: 500, statusText: 'Error' });
+      await stable();
+      expect(saveStatus()).toBe("Couldn't save");
+
+      element.querySelector<HTMLButtonElement>('.status-bar .link-button')!.click();
+      await settle();
+      const retry = http.expectOne((r) => r.method === 'PUT');
+      expect(retry.request.body).toEqual({ content: paragraph('Hi') });
+      retry.flush(saved('p1', paragraph('Hi')));
+      await stable();
+      expect(saveStatus()).toBe('Saved');
+    });
+
+    it('says when a page is too large to save', async () => {
+      await open('p1', page('p1', 'Notes'));
+      (await typeAndWait('Hi')).flush({ detail: 'too big' }, { status: 413, statusText: 'Content Too Large' });
+      await stable();
+      expect(saveStatus()).toBe('Too large to save');
+    });
+
+    it('saves pending edits to the page they were typed on when switching pages', async () => {
+      await open('p1', page('p1', 'One'));
+      editor()!.commands.insertContent('Unsaved');
+      await stable();
+
+      fixture.componentRef.setInput('pageId', 'p2');
+      fixture.detectChanges();
+      await settle();
+      const flushed = http.expectOne((r) => r.method === 'PUT');
+      expect(flushed.request.url).toBe('/api/pages/p1/content');
+      expect(flushed.request.body).toEqual({ content: paragraph('Unsaved') });
+      flushed.flush(saved('p1', paragraph('Unsaved')));
+      http.expectOne('/api/pages/p2').flush(page('p2', 'Two'));
+      http.expectOne('/api/pages/p2/content').flush(saved('p2'));
+      await stable();
+
+      expect(title()!.value).toBe('Two');
+      expect(editor()!.getText()).toBe('');
+      expect(saveStatus()).toBe('');
+    });
+
+    it('asks before leaving with unsaved edits, and saves them', async () => {
+      await open('p1', page('p1', 'Notes'));
+      const clean = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(clean);
+      expect(clean.defaultPrevented).toBe(false);
+
+      editor()!.commands.insertContent('Unsaved');
+      await stable();
+      const dirty = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(dirty);
+      expect(dirty.defaultPrevented).toBe(true);
+      await settle();
+      http.expectOne((r) => r.method === 'PUT').flush(saved('p1', paragraph('Unsaved')));
+      await stable();
+    });
+
+    it('saves what is left when the page view closes', async () => {
+      await open('p1', page('p1', 'Notes'));
+      editor()!.commands.insertContent('Bye');
+      await stable();
+      fixture.destroy();
+      await settle();
+      http.expectOne((r) => r.method === 'PUT' && r.url === '/api/pages/p1/content');
+    });
+  });
+
+  describe('trashed pages', () => {
+    it('shows the content read-only, with a banner', async () => {
+      await open('p1', page('p1', 'Old', '2026-11-01T00:00:00Z'), saved('p1', paragraph('Kept')));
+      expect(element.querySelector('.banner')!.textContent).toContain('in the trash');
+      expect(textbox()!.getAttribute('contenteditable')).toBe('false');
+      expect(title()!.readOnly).toBe(true);
+    });
+  });
+
+  describe('title', () => {
+    it('saves a new title on Enter, updates the sidebar, and moves to the content', async () => {
+      const applyTitle = vi.spyOn(TestBed.inject(PageTreeStore), 'applyTitle');
+      await open('p1', page('p1', ''));
+
+      title()!.value = '  Launch plan ';
+      title()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      await settle();
+      const request = http.expectOne((r) => r.method === 'PATCH');
+      expect(request.request.body).toEqual({ title: 'Launch plan' });
+      request.flush(page('p1', 'Launch plan'));
+      await stable();
+
+      expect(applyTitle).toHaveBeenCalledWith('p1', 'Launch plan');
+      await nextFrame(); // Tiptap moves focus on the next animation frame
+      expect(document.activeElement).toBe(textbox());
+    });
+
+    it('saves on blur, but not when the title did not change', async () => {
+      await open('p1', page('p1', 'Same'));
+      title()!.dispatchEvent(new FocusEvent('blur'));
+      await settle();
+      http.expectNone((r) => r.method === 'PATCH');
+
+      title()!.value = 'Changed';
+      title()!.dispatchEvent(new FocusEvent('blur'));
+      await settle();
+      http.expectOne((r) => r.method === 'PATCH').flush(page('p1', 'Changed'));
+      await stable();
+    });
+
+    it('puts the old title back and says so when saving fails', async () => {
+      await open('p1', page('p1', 'Old'));
+      title()!.value = 'New';
+      title()!.dispatchEvent(new FocusEvent('blur'));
+      await settle();
+      http.expectOne((r) => r.method === 'PATCH').flush(null, { status: 409, statusText: 'Conflict' });
+      await stable();
+
+      expect(title()!.value).toBe('Old');
+      const alert = element.querySelector('#title-error')!;
+      expect(alert.textContent).toContain("Couldn't save the title");
+      expect(title()!.getAttribute('aria-describedby')).toBe('title-error');
+    });
+  });
+
+  it('starts from an empty document for a new page', async () => {
     await open('p1', page('p1', 'One'));
-    const first = textbox();
-    await open('p2', page('p2', 'Two'));
-
-    expect(title()!.value).toBe('Two');
-    expect(textbox()).not.toBe(first);
     expect(fixture.componentInstance.content()).toEqual(EMPTY_DOC);
-  });
-
-  it('says when a page is in the trash', async () => {
-    await open('p1', page('p1', 'Old', '2026-11-01T00:00:00Z'));
-    expect(element.querySelector('[role="status"]')!.textContent).toContain('in the trash');
-  });
-
-  it('explains a missing or inaccessible page', async () => {
-    await open('nope', null, 404);
-    expect(element.querySelector('h1')!.textContent).toContain('Page not found');
-    expect(textbox()).toBeNull();
   });
 });

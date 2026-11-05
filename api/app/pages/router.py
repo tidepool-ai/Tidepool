@@ -3,14 +3,16 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.deps import CurrentUser
+from app.config import settings
 from app.db import get_session
 from app.pages import service
-from app.pages.models import Page
-from app.pages.schemas import PageCreate, PageOut, PageUpdate
+from app.pages.models import Page, PageContent
+from app.pages.schemas import PageContentIn, PageContentOut, PageCreate, PageOut, PageUpdate
 
 router = APIRouter(tags=["pages"])
 
@@ -102,3 +104,66 @@ async def list_top_level(workspace_id: uuid.UUID, user: CurrentUser, session: Se
     if not await service.can_access_workspace(session, workspace_id, user.id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found")
     return [_out(page) for page in await service.list_top_level(session, workspace_id)]
+
+
+class _TooLarge(Exception):
+    pass
+
+
+async def _read_limited(request: Request, limit: int) -> bytes:
+    """Read the body, stopping as soon as it passes `limit` (also when there's no Content-Length)."""
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > limit:
+        raise _TooLarge
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > limit:
+            raise _TooLarge
+    return bytes(body)
+
+
+def _content_out(page_id: uuid.UUID, content: PageContent | None) -> PageContentOut:
+    if content is None:
+        return PageContentOut(page_id=page_id, content=None, updated_at=None)
+    return PageContentOut(page_id=page_id, content=content.doc, updated_at=content.updated_at)
+
+
+@router.get("/api/pages/{page_id}/content")
+async def get_content(page_id: uuid.UUID, user: CurrentUser, session: Session) -> PageContentOut:
+    page = await _load(session, page_id, user.id)
+    return _content_out(page.id, await service.get_content(session, page))
+
+
+@router.put(
+    "/api/pages/{page_id}/content",
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {"application/json": {"schema": PageContentIn.model_json_schema()}},
+        }
+    },
+)
+async def put_content(
+    page_id: uuid.UUID, request: Request, user: CurrentUser, session: Session
+) -> PageContentOut:
+    """Replace the page's document. Bodies over MAX_PAGE_CONTENT_BYTES get 413."""
+    page = await _load(session, page_id, user.id, for_update=True)
+    limit = settings.max_page_content_bytes
+    try:
+        body = PageContentIn.model_validate_json(await _read_limited(request, limit))
+    except _TooLarge:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail=f"Page content is over {limit} bytes"
+        ) from None
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=exc.errors(include_url=False, include_context=False, include_input=False),
+        ) from None
+    try:
+        content = await service.save_content(session, page, body.content, user.id)
+    except service.PageConflictError as exc:
+        raise _bad_request(exc) from None
+    await session.commit()
+    return _content_out(page.id, content)

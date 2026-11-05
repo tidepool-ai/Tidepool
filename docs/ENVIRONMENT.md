@@ -16,6 +16,7 @@ on your own machine or exist for one CI run.
 | `CORS_ORIGINS` | No | In deploys | `http://localhost:4200` | Comma-separated web app origins. |
 | `REFRESH_COOKIE_SECURE` | No | No | `true` | Set `false` only for plain-http local dev. |
 | `LOG_MAGIC_LINKS` | No, but see note | No | on in development | Writes sign-in links to the logs. Anyone who can read the logs can then sign in as anyone: private test deploys only. |
+| `MAX_PAGE_CONTENT_BYTES` | No | No | `1000000` | Largest page document accepted, in bytes of JSON; bigger saves get `413`. |
 | `TEST_DATABASE_URL` | Yes if set | No | `DATABASE_URL` + `_test` | Test database. It is **dropped and recreated** on every test run; its name must end in `_test`. |
 | `GLM_BASE_URL`, `GLM_API_KEY`, `GLM_MODEL` | `GLM_API_KEY` **yes** | From T23 | *(empty)* | Hosted GLM model for AI features. The key stays on the server. |
 
