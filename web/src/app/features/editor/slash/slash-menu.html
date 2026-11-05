@@ -1,0 +1,58 @@
+@let menu = controller();
+@if (menu.open()) {
+  @let position = menu.position();
+  <div
+    class="slash-menu"
+    [style.left.px]="position.left"
+    [style.top.px]="position.top"
+    [style.bottom.px]="position.bottom"
+    (mousedown)="keepEditorFocus($event)"
+  >
+    <div class="tabs" role="tablist" aria-label="Block types">
+      @for (tab of tabs; track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          tabindex="-1"
+          class="tab"
+          [attr.aria-selected]="menu.tab() === tab.id"
+          (click)="menu.setTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    @if (menu.items().length) {
+      <ul role="listbox" [id]="menu.listId" aria-label="Insert block">
+        @for (item of menu.items(); track item.id; let i = $index) {
+          <!--
+            Options aren't focusable on purpose: focus stays in the editor, which handles the keys and
+            points here with aria-activedescendant (the listbox pattern). Clicks are a mouse shortcut.
+          -->
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+          <li
+            role="option"
+            class="option"
+            [id]="menu.optionId(i)"
+            [attr.aria-selected]="i === menu.activeIndex()"
+            [class.active]="i === menu.activeIndex()"
+            (mouseenter)="menu.activeIndex.set(i)"
+            (click)="menu.select(i)"
+          >
+            <span class="icon" aria-hidden="true">{{ item.icon }}</span>
+            <span class="text">
+              <span class="title">{{ item.title }}</span>
+              <span class="description">{{ item.description }}</span>
+            </span>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="empty" [id]="menu.listId" role="status">
+        {{ menu.query() ? 'No results' : 'Nothing here yet' }}
+      </p>
+    }
+    <p class="hint" aria-hidden="true">↑↓ move · Enter insert · Tab switch · Esc close</p>
+  </div>
+}

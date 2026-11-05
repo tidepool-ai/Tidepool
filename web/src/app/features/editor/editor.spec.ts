@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Editor, JSONContent } from '@tiptap/core';
+import { press, type } from '../../../testing/editor-testing';
 import { stubLayoutForProseMirror } from '../../../testing/prosemirror-jsdom';
 import { EMPTY_DOC, EditorComponent } from './editor';
 
@@ -12,23 +13,6 @@ class Host {
   initial: JSONContent | null = null;
   readonly changes: JSONContent[] = [];
   readonly editor = signal<Editor | null>(null);
-}
-
-/** Type like a user: each character goes through ProseMirror's text input path, so input rules fire. */
-function type(editor: Editor, text: string): void {
-  const { view } = editor;
-  for (const char of text) {
-    const { from, to } = view.state.selection;
-    const handled = view.someProp('handleTextInput', (f) => f(view, from, to, char, () => view.state.tr.insertText(char, from, to)));
-    if (!handled) view.dispatch(view.state.tr.insertText(char, from, to));
-  }
-}
-
-/** Press a key through the editor's keymaps (Mod = Ctrl here). */
-function press(editor: Editor, key: string, modifiers: { ctrl?: boolean; shift?: boolean } = {}): void {
-  const event = new KeyboardEvent('keydown', { key, ctrlKey: !!modifiers.ctrl, shiftKey: !!modifiers.shift });
-  const { view } = editor;
-  view.someProp('handleKeyDown', (f) => f(view, event));
 }
 
 /** The document as plain JSON (Tiptap v3 types getJSON() more narrowly). */
