@@ -31,6 +31,15 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false # e.g. "Tidepool <login@yourdomain.com>" on a domain verified in Resend
+      # Image uploads (docs/DEPLOY.md, step 6). Empty S3_BUCKET leaves uploads off.
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false # e.g. eu-central-1
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
       # Until Resend is set up, sign-in links go to the Render logs. Test deploys only.
       - key: LOG_MAGIC_LINKS
         value: "true"

@@ -33,7 +33,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: each shortcut has a test.
 - [x] **T12 Block handle (web)**: Hover handle with drag-to-reorder and block menu (turn into, duplicate, delete, copy link).
   - Done when: reorder persists; menu actions tested.
-- [ ] **T13 Images (api + web)**: `POST /api/files/presign` (S3/MinIO, 25 MB limit, image types only); paste or upload image into the editor.
+- [x] **T13 Images (api + web)**: `POST /api/files/presign` (S3/MinIO, 25 MB limit, image types only); paste or upload image into the editor.
   - Done when: API validates type/size; editor shows upload progress and error state.
 
 ## Phase 2: Realtime

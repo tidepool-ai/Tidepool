@@ -22,13 +22,18 @@ describe('slash commands', () => {
       'Callout',
       'Divider',
       'Code',
+      'Image',
     ]);
-    expect(titles('', 'blocks')).toEqual(titles(''));
+    expect(titles('', 'blocks')).toEqual(titles('').filter((title) => title !== 'Image'));
   });
 
-  it('has nothing in AI and Embeds yet', () => {
+  it('has Image under Embeds, and nothing in AI yet', () => {
+    expect(titles('', 'embeds')).toEqual(['Image']);
     expect(titles('', 'ai')).toEqual([]);
-    expect(titles('', 'embeds')).toEqual([]);
+  });
+
+  it('finds Image by picture words', () => {
+    for (const query of ['image', 'photo', 'picture', 'upload']) expect(titles(query), query).toContain('Image');
   });
 
   describe('filtering', () => {

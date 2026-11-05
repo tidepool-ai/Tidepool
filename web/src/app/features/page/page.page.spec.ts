@@ -8,6 +8,7 @@ import { stripIds } from '../../../testing/editor-testing';
 import { stubLayoutForProseMirror } from '../../../testing/prosemirror-jsdom';
 import { EMPTY_DOC, EditorComponent } from '../editor/editor';
 import { PageTreeStore } from '../page-tree/page-tree.store';
+import { FORM_POSTER } from '../../core/files/image-upload';
 import { AUTOSAVE_DELAY_MS, PagePage } from './page.page';
 
 const DELAY = 20;
@@ -70,11 +71,18 @@ describe('PagePage', () => {
     return http.expectOne((r) => r.method === 'PUT' && r.url === `/api/pages/${pageId}/content`);
   }
 
+  const postForm = vi.fn().mockResolvedValue(undefined);
+
   beforeAll(() => stubLayoutForProseMirror());
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), { provide: AUTOSAVE_DELAY_MS, useValue: DELAY }],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AUTOSAVE_DELAY_MS, useValue: DELAY },
+        { provide: FORM_POSTER, useValue: postForm },
+      ],
     });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(PagePage);
@@ -223,6 +231,30 @@ describe('PagePage', () => {
       fixture.destroy();
       await settle();
       http.expectOne((r) => r.method === 'PUT' && r.url === '/api/pages/p1/content');
+    });
+  });
+
+  describe('images', () => {
+    it("uploads a pasted image to this page's storage and saves the page with it", async () => {
+      await open('p1', page('p1', 'Photos'), saved('p1', { type: 'doc', content: [{ ...paragraph('Hi').content![0], attrs: { id: 'b1' } }] }));
+      const event = new Event('paste', { bubbles: true, cancelable: true });
+      const file = new File(['png'], 'shot.png', { type: 'image/png' });
+      Object.defineProperty(event, 'clipboardData', { value: { files: [file], types: ['Files'], items: [], getData: () => '' } });
+      editor()!.view.dom.dispatchEvent(event);
+      await new Promise((resolve) => setTimeout(resolve));
+
+      const presign = http.expectOne('/api/files/presign');
+      expect(presign.request.body).toEqual({ page_id: 'p1', filename: 'shot.png', content_type: 'image/png', size: 3 });
+      presign.flush({ upload_url: 'https://storage.example.com/b', fields: { key: 'k' }, url: '/api/files/pages/p1/k.png' });
+      await stable();
+      await new Promise((resolve) => setTimeout(resolve));
+      expect(postForm).toHaveBeenCalledWith('https://storage.example.com/b', expect.any(FormData), expect.any(Function));
+
+      await wait(DELAY + 20);
+      const save = http.expectOne((r) => r.method === 'PUT');
+      expect(save.request.body.content.content.map((n: JSONContent) => n.type)).toContain('image');
+      save.flush(saved('p1'));
+      await stable();
     });
   });
 

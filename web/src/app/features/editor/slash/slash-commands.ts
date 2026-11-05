@@ -1,4 +1,5 @@
 import { Editor, Range } from '@tiptap/core';
+import type {} from '../images/image-upload'; // the pickImage command
 
 export type SlashGroup = 'blocks' | 'ai' | 'embeds';
 export type SlashTab = 'all' | SlashGroup;
@@ -47,7 +48,7 @@ function block(apply: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor[
   };
 }
 
-/** Blocks available today (FR-3). AI (T24) and embeds (T13) add to their tabs later. */
+/** Blocks available today (FR-3). AI (T24) adds to its tab later. */
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
   { id: 'text', title: 'Text', description: 'Plain paragraph', keywords: ['paragraph', 'plain', 'p'], group: 'blocks', icon: 'T', run: setBlock('paragraph') },
   { id: 'h1', title: 'Heading 1', description: 'Big section heading', keywords: ['h1', 'title', '#', 'large'], group: 'blocks', icon: 'H1', run: setBlock('heading', { level: 1 }) },
@@ -61,6 +62,13 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
   { id: 'callout', title: 'Callout', description: 'Make a note stand out', keywords: ['note', 'info', 'tip', 'highlight', 'aside'], group: 'blocks', icon: '💡', run: block((chain) => chain.setCallout()) },
   { id: 'divider', title: 'Divider', description: 'A line between sections', keywords: ['hr', 'line', 'separator', 'rule', '---'], group: 'blocks', icon: '—', run: block((chain) => chain.setHorizontalRule()) },
   { id: 'code', title: 'Code', description: 'Code with syntax highlighting', keywords: ['code block', 'snippet', 'pre', '```'], group: 'blocks', icon: '</>', run: block((chain) => chain.setCodeBlock()) },
+  {
+    id: 'image', title: 'Image', description: 'Upload a picture (or paste one)', keywords: ['picture', 'photo', 'upload', 'img', 'png', 'jpg'], group: 'embeds', icon: '🖼',
+    run: (editor, range) => {
+      editor.chain().focus().deleteRange(range).run();
+      editor.commands.pickImage();
+    },
+  },
 ];
 
 /**

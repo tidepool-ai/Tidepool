@@ -74,6 +74,36 @@ delivers to **the email address of your Resend account**. To sign in other peopl
 If an email doesn't arrive, Render's logs show `Sign-in email to … failed:` with Resend's reason
 (unverified domain, wrong key, …).
 
+## 6. Images: AWS S3
+
+Until this is set up, the app works but image uploads say *"Image uploads aren't set up on this
+server."* Browsers upload straight to the bucket with a short-lived signed form from the API, and
+the bucket itself rejects anything over 25 MB or not an image. That needs a service that supports
+**POST policy uploads**: AWS S3 or MinIO. (Cloudflare R2 doesn't support them.)
+
+1. **Bucket.** AWS console → S3 → **Create bucket**, e.g. `tidepool-images-<you>`, in a region near
+   your Render service. Leave **Block all public access** on: images are shown through signed links.
+2. **CORS**, so the web app may upload. Bucket → **Permissions → Cross-origin resource sharing (CORS)**:
+   ```json
+   [{ "AllowedOrigins": ["https://<your-app>.vercel.app"], "AllowedMethods": ["POST"], "AllowedHeaders": ["*"], "MaxAgeSeconds": 3000 }]
+   ```
+3. **Access key.** IAM → **Users → Create user** `tidepool-api` (no console access) → **Add
+   permissions → Create inline policy** (JSON):
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [{ "Effect": "Allow", "Action": ["s3:PutObject", "s3:GetObject"], "Resource": "arn:aws:s3:::tidepool-images-<you>/pages/*" }]
+   }
+   ```
+   Then the user → **Security credentials → Create access key** (use case: application outside AWS).
+4. **Render** → Environment: `S3_BUCKET`, `S3_REGION` (e.g. `eu-central-1`), `S3_ACCESS_KEY_ID`,
+   `S3_SECRET_ACCESS_KEY`. Leave `S3_ENDPOINT_URL` empty for AWS.
+5. Type `/image` on a page and pick a picture, or paste one.
+
+Image links (`/api/files/…`) work without signing in, because `<img>` tags can't send the access
+token. Their names are random, so only people who have a link can open the image, like an
+unlisted share link.
+
 ## Settings reference
 
 All variables, with local setup and what to do if one leaks: [ENVIRONMENT.md](ENVIRONMENT.md).
@@ -88,5 +118,7 @@ All variables, with local setup and what to do if one leaks: [ENVIRONMENT.md](EN
 | `REFRESH_COOKIE_SECURE` | Render | `true` |
 | `LOG_MAGIC_LINKS` | Render | `true` for a private test deploy only |
 | `RESEND_API_KEY` | Render | Resend API key; links are emailed once it's set |
+| `S3_BUCKET`, `S3_REGION` | Render | Image bucket and its region (step 6) |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | Render | Access key of the `tidepool-api` IAM user; keep the secret secret |
 | `EMAIL_FROM` | Render | Sender on a domain verified in Resend (default: Resend's test sender) |
 | `PYTHON_VERSION` | Render | Set by `render.yaml` |

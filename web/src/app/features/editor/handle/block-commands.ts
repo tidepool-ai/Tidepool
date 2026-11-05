@@ -15,6 +15,7 @@ export const BLOCK_ID_TYPES = [
   'codeBlock',
   'horizontalRule',
   'details',
+  'image',
 ];
 
 export interface TopBlock {
@@ -66,6 +67,8 @@ export function blockName(node: PmNode): string {
       return 'Divider';
     case 'details':
       return 'Toggle';
+    case 'image':
+      return 'Image';
     default:
       return 'Block';
   }

@@ -15,6 +15,7 @@ import {
 } from '@angular/core';
 import { Editor, Extensions, JSONContent } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
+import Image from '@tiptap/extension-image';
 import UniqueID from '@tiptap/extension-unique-id';
 import StarterKit from '@tiptap/starter-kit';
 import { blockExtensions } from './blocks';
@@ -22,6 +23,8 @@ import { BLOCK_ID_TYPES } from './handle/block-commands';
 import { BlockFlash, blockFlashKey } from './handle/block-flash';
 import { BlockHandle } from './handle/block-handle';
 import { BlockKeys } from './handle/block-keys';
+import { ImageUpload } from './images/image-upload';
+import { ImageUploader } from '../../core/files/image-upload';
 import { SlashMenuView } from './slash/slash-menu';
 import { SlashMenuController } from './slash/slash-menu.controller';
 import { SlashMenu, exitSuggestion, slashMenuKey } from './slash/slash-menu.extension';
@@ -34,7 +37,11 @@ export const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragrap
  * (T08, T11). Markdown shortcuts (FR-5): "# ", "## ", "### ", "- ", "1. ", "[] ", "> ", "``` ", "---",
  * **bold**, *italic*, `code`. Links come later.
  */
-export function editorExtensions(placeholder: string, slash: SlashMenuController | null = null): Extensions {
+export function editorExtensions(
+  placeholder: string,
+  slash: SlashMenuController | null = null,
+  uploader: () => ImageUploader | null = () => null,
+): Extensions {
   return [
     SlashMenu.configure({ controller: slash }),
     StarterKit.configure({
@@ -44,6 +51,9 @@ export function editorExtensions(placeholder: string, slash: SlashMenuController
       link: false,
     }),
     ...blockExtensions(),
+    // Image blocks (FR-3). Pasted data: URLs are dropped; images are uploaded instead (T13).
+    Image.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: 'tp-image' } }),
+    ImageUpload.configure({ uploader }),
     // Stable block ids, so a link can point at a block (block menu > Copy link).
     UniqueID.configure({ types: BLOCK_ID_TYPES, attributeName: 'id' }),
     BlockKeys,
@@ -84,6 +94,8 @@ export class EditorComponent {
   readonly pageId = input<string | null>(null);
   /** Scroll to and highlight this block once loaded (from a #block-<id> link). */
   readonly focusBlock = input<string | null>(null);
+  /** Uploads pasted, dropped or picked images; null turns image uploads off. */
+  readonly uploadImage = input<ImageUploader | null>(null);
   readonly contentChange = output<JSONContent>();
   /** Emitted once the editor exists (tests and future toolbars use it). */
   readonly ready = output<Editor>();
@@ -101,7 +113,7 @@ export class EditorComponent {
     afterNextRender(() => {
       this.editor = new Editor({
         element: this.host().nativeElement,
-        extensions: editorExtensions(this.placeholder(), this.slash),
+        extensions: editorExtensions(this.placeholder(), this.slash, () => this.uploadImage()),
         content: this.content() ?? EMPTY_DOC,
         editable: this.editable(),
         editorProps: {
