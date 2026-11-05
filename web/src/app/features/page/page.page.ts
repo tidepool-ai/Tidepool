@@ -13,7 +13,9 @@ import {
   viewChild,
 } from '@angular/core';
 import { JSONContent } from '@tiptap/core';
-import { firstValueFrom } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { firstValueFrom, of } from 'rxjs';
 import { EMPTY_DOC, EditorComponent } from '../editor/editor';
 import { ApiPage, PageTreeStore } from '../page-tree/page-tree.store';
 import { Autosave } from './autosave';
@@ -47,6 +49,12 @@ export class PagePage {
   private readonly autosaveDelay = inject(AUTOSAVE_DELAY_MS);
 
   readonly pageId = input.required<string>();
+  /** #block-<id> in the URL (block menu > Copy link) points at a block to show. */
+  private readonly fragment = toSignal(inject(ActivatedRoute, { optional: true })?.fragment ?? of(null));
+  protected readonly focusBlock = computed(() => {
+    const fragment = this.fragment();
+    return fragment?.startsWith('block-') ? fragment.slice('block-'.length) : null;
+  });
   protected readonly page = httpResource<PageDetail>(() => `/api/pages/${this.pageId()}`);
   protected readonly saved = httpResource<PageContent>(() => `/api/pages/${this.pageId()}/content`);
   /** Loaded content, but only once it is this page's (never a previous page's still in flight). */

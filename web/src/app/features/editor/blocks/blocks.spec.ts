@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Editor, JSONContent } from '@tiptap/core';
-import { press, type } from '../../../../testing/editor-testing';
+import { press, stripIds, type } from '../../../../testing/editor-testing';
 import { stubLayoutForProseMirror } from '../../../../testing/prosemirror-jsdom';
 import { EditorComponent } from '../editor';
 import { languageId } from './code-block';
@@ -15,7 +15,7 @@ class Host {
   readonly editor = signal<Editor | null>(null);
 }
 
-const doc = (editor: Editor) => editor.getJSON() as JSONContent;
+const doc = (editor: Editor) => stripIds(editor.getJSON() as JSONContent);
 const first = (editor: Editor) => doc(editor).content![0];
 
 describe('T11 blocks', () => {

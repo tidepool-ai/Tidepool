@@ -1,0 +1,55 @@
+@if (target(); as current) {
+  <div class="handle" [style.top.px]="current.top">
+    <button
+      #grip
+      type="button"
+      class="grip"
+      draggable="true"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="menuOpen()"
+      [attr.aria-label]="'Block menu: ' + current.name"
+      title="Drag to move · click for options"
+      (click)="toggleMenu()"
+      (dragstart)="dragStart($event)"
+      (dragend)="dragEnd()"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+        <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+        <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
+      </svg>
+    </button>
+
+    @if (menuOpen()) {
+      <div #menu class="menu" role="menu" aria-label="Block actions" tabindex="-1" (keydown)="menuKeydown($event)">
+        <div role="group" aria-labelledby="turn-into-label">
+          <p class="group-label" id="turn-into-label">Turn into</p>
+          @for (option of turnIntoOptions; track option.id) {
+            <button
+              type="button"
+              role="menuitemradio"
+              tabindex="-1"
+              class="item"
+              [attr.aria-checked]="isCurrent(option.id)"
+              (click)="turnInto(option.id)"
+            >
+              <span class="icon" aria-hidden="true">{{ option.icon }}</span>{{ option.title }}
+            </button>
+          }
+        </div>
+        <hr />
+        <button type="button" role="menuitem" tabindex="-1" class="item" (click)="duplicate()">Duplicate</button>
+        <button type="button" role="menuitem" tabindex="-1" class="item" [disabled]="!canMove(-1)" (click)="move(-1)">
+          Move up <kbd>Alt+Shift+↑</kbd>
+        </button>
+        <button type="button" role="menuitem" tabindex="-1" class="item" [disabled]="!canMove(1)" (click)="move(1)">
+          Move down <kbd>Alt+Shift+↓</kbd>
+        </button>
+        <button type="button" role="menuitem" tabindex="-1" class="item" (click)="copyLink()">Copy link</button>
+        <hr />
+        <button type="button" role="menuitem" tabindex="-1" class="item" (click)="remove()">Delete</button>
+      </div>
+    }
+  </div>
+}
+<p class="visually-hidden" role="status" aria-live="polite">{{ announcement() }}</p>
