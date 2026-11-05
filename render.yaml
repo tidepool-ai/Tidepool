@@ -40,6 +40,9 @@ services:
         sync: false
       - key: S3_SECRET_ACCESS_KEY
         sync: false
+      # Live editing: only needed when running more than one API worker or instance (docs/REALTIME.md).
+      - key: REDIS_URL
+        sync: false # leave empty for one instance
       # Until Resend is set up, sign-in links go to the Render logs. Test deploys only.
       - key: LOG_MAGIC_LINKS
         value: "true"

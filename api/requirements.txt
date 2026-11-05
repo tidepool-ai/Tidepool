@@ -6,3 +6,5 @@ alembic>=1.14
 pyjwt>=2.9
 email-validator>=2.2
 boto3>=1.35
+pycrdt>=0.12
+redis>=5.2

@@ -84,6 +84,13 @@ class Settings:
     s3_secret_access_key: str = os.getenv("S3_SECRET_ACCESS_KEY", "")
     # Largest image accepted, in bytes (25 MB, PRD security table).
     max_upload_bytes: int = int(os.getenv("MAX_UPLOAD_BYTES") or 25 * 1024 * 1024)
+    # Realtime (T14). With REDIS_URL, API workers share live edits through Redis pub/sub; without it,
+    # run a single worker. Live documents are saved this long after the last edit (debounced).
+    redis_url: str = os.getenv("REDIS_URL", "")
+    realtime_save_delay_seconds: float = float(os.getenv("REALTIME_SAVE_DELAY_SECONDS") or 2)
+    realtime_save_max_delay_seconds: float = 10
+    # Largest single WebSocket message accepted, in bytes.
+    max_realtime_message_bytes: int = int(os.getenv("MAX_REALTIME_MESSAGE_BYTES") or 1_000_000)
     glm_base_url: str = os.getenv("GLM_BASE_URL", "")
     glm_api_key: str = os.getenv("GLM_API_KEY", "")
     glm_model: str = os.getenv("GLM_MODEL", "")
