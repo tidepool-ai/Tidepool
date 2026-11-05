@@ -12,7 +12,26 @@ layer (T15) connects to it with Yjs' `WebsocketProvider`.
 
 A ticket is good for one page for a minute, so get a fresh one before every (re)connect. Browsers
 can't send headers on a WebSocket; the short ticket keeps the access token out of URLs and logs.
-Vercel's rewrites don't carry WebSockets, so the web app connects to the API host directly.
+Vercel's rewrites don't carry WebSockets, so the web app connects to the API host directly: the
+ticket's `url` is absolute (`wss://…`) when the API knows its public address (`PUBLIC_API_URL`, or
+`RENDER_EXTERNAL_URL`, which Render sets by itself), and a plain path otherwise (local dev, where
+`ng serve` forwards `/ws`).
+
+## In the web app (T15)
+
+- `core/collab/collab-connection.ts` wraps `y-websocket`'s provider: a fresh ticket per connect,
+  close codes 4403 and 1009 are final, a resync every 10 s keeps quiet pages from looking dead, and
+  the state (`connecting`, `connected`, `offline`, `closed`) is exposed as signals.
+- The page waits for the first sync before showing the editor. A page whose live document has
+  never been written gets its old REST JSON copied in once. Every tab builds that copy as the same
+  Yjs client from the same JSON, so two tabs doing it at once still end up with one copy.
+- Pages in the trash show a read-only snapshot and disconnect, so nothing is ever sent for them.
+- Edits made offline stay in the tab's document and are sent on reconnect; leaving the page while
+  some haven't reached the server asks for confirmation.
+- Presence: each tab shares `{ user: { id, name } }`; the top of the page shows everyone else,
+  once per person.
+- `KeepCaret` (`features/editor/collab/keep-caret.ts`) works around a y-tiptap heuristic that puts
+  your caret back at its old offset when someone else edits the same block.
 
 ## Protocol
 
@@ -44,5 +63,5 @@ collaboration extension uses the `default` XML fragment); the server only merges
 - With `REDIS_URL` set, workers share updates and presence through Redis pub/sub (one channel per
   page). A worker that opens a page asks the others for edits that aren't saved yet. Without
   Redis, run a single worker (the Render setup does).
-- `page_docs` is separate from the REST `page_content` JSON for now; T15 moves the editor onto the
-  live document.
+- Since T15 the editor only edits the live document; the REST `page_content` JSON is read once, to
+  copy pages saved before live editing.

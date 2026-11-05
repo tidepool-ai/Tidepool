@@ -25,6 +25,7 @@ on your own machine or exist for one CI run.
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `S3_SECRET_ACCESS_KEY` **yes** | For images | *(empty)* | Key that may put and get objects under `pages/` in the bucket. |
 | `MAX_UPLOAD_BYTES` | No | No | `26214400` (25 MB) | Largest image accepted; the bucket enforces it too. |
 | `REDIS_URL` | Yes if it has a password | With 2+ API workers | *(empty: one worker)* | Redis that API workers use to share live edits. Not needed for a single worker. |
+| `PUBLIC_API_URL` | No | Not on Render | `RENDER_EXTERNAL_URL` on Render | The API's public address (`https://…`), so the web app can open live-editing sockets on it directly. Render sets `RENDER_EXTERNAL_URL` by itself; elsewhere set this. |
 | `REALTIME_SAVE_DELAY_SECONDS` | No | No | `2` | Live documents are saved this long after the last edit (and at least every 10 s while editing). |
 | `MAX_REALTIME_MESSAGE_BYTES` | No | No | `1000000` | Largest WebSocket message accepted; bigger ones close the socket. |
 | `TEST_DATABASE_URL` | Yes if set | No | `DATABASE_URL` + `_test` | Test database. It is **dropped and recreated** on every test run; its name must end in `_test`. |

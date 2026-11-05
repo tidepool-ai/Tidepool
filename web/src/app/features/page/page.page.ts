@@ -1,9 +1,7 @@
-import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
-  InjectionToken,
   computed,
   effect,
   inject,
@@ -15,30 +13,41 @@ import {
 import { JSONContent } from '@tiptap/core';
 import { ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import * as Y from 'yjs';
 import { firstValueFrom, of } from 'rxjs';
-import { EMPTY_DOC, EditorComponent } from '../editor/editor';
+import { EditorComponent, editorExtensions } from '../editor/editor';
+import { docToJson, isBlank, seedFromJson } from '../editor/collab/seed';
 import { ApiPage, PageTreeStore } from '../page-tree/page-tree.store';
-import { Autosave } from './autosave';
 import { ImageUploadService, ImageUploader } from '../../core/files/image-upload';
+import { AuthService } from '../../core/auth/auth.service';
+import { COLLAB_CONNECTOR, CollabConnection } from '../../core/collab/collab-connection';
+import { Presence } from './presence/presence';
 
 interface PageDetail extends ApiPage {
   archived_at: string | null;
 }
 
+/** Content saved as JSON before live editing (T09); copied into the live document once. */
 interface PageContent {
   page_id: string;
   content: JSONContent | null;
   updated_at: string | null;
 }
 
-/** How long typing has to pause before the content is saved (T09: 1 second). */
-export const AUTOSAVE_DELAY_MS = new InjectionToken<number>('AUTOSAVE_DELAY_MS', { factory: () => 1000 });
+/** What the editor shows: the live document, or (read-only pages) a snapshot of it. */
+type View = { kind: 'live'; doc: Y.Doc } | { kind: 'snapshot'; content: JSONContent | null };
 
-/** /p/:pageId: the page title and its content in the block editor, saved as you type. */
+const CLOSED_MESSAGES: Record<string, string> = {
+  'No access to this page': "You don't have access to this page any more.",
+  'This page is read-only': 'This page is read-only now.',
+  'Message too big': 'That change was too big to save.',
+};
+
+/** /p/:pageId: the page title and its content, edited live with everyone who has it open (T15). */
 @Component({
   selector: 'app-page-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EditorComponent],
+  imports: [EditorComponent, Presence],
   styleUrl: './page.page.scss',
   templateUrl: './page.page.html',
   host: { '(window:beforeunload)': 'warnIfUnsaved($event)' },
@@ -47,8 +56,9 @@ export class PagePage {
   private readonly http = inject(HttpClient);
   private readonly tree = inject(PageTreeStore);
   private readonly editor = viewChild(EditorComponent);
-  private readonly autosaveDelay = inject(AUTOSAVE_DELAY_MS);
   private readonly images = inject(ImageUploadService);
+  private readonly connect = inject(COLLAB_CONNECTOR);
+  protected readonly auth = inject(AuthService);
 
   readonly pageId = input.required<string>();
   /** #block-<id> in the URL (block menu > Copy link) points at a block to show. */
@@ -64,64 +74,76 @@ export class PagePage {
     const saved = this.saved.hasValue() ? this.saved.value() : undefined;
     return saved?.page_id === this.pageId() ? saved : undefined;
   });
-  /** The latest document as Tiptap JSON. */
-  readonly content = signal<JSONContent>(EMPTY_DOC);
   protected readonly titleError = signal(false);
   /** Pasted, dropped or picked images go to this page's storage (T13). */
   protected readonly uploadImage: ImageUploader = (file, onProgress) =>
     this.images.upload(this.pageId(), file, onProgress);
 
-  /** One autosave per page, so a pending save always goes to the page it was typed on. */
-  readonly autosave = signal<Autosave<JSONContent> | null>(null);
-  protected readonly saveMessage = computed(() => {
-    const autosave = this.autosave();
-    switch (autosave?.status()) {
-      case 'pending':
-      case 'saving':
-        return 'Saving…';
-      case 'saved':
+  /** This page's live document connection (one per page). */
+  readonly connection = signal<CollabConnection | null>(null);
+  protected readonly view = signal<View | null>(null);
+  protected readonly readOnly = computed(() => !!this.page.value()?.archived_at);
+  /** Editable unless the page is in the trash or the server stopped taking edits. */
+  protected readonly editable = computed(() => !this.readOnly() && this.connection()?.status() !== 'closed');
+
+  protected readonly statusMessage = computed(() => {
+    const connection = this.connection();
+    const view = this.view();
+    if (!connection || view?.kind === 'snapshot') return '';
+    switch (connection.status()) {
+      case 'connecting':
+        return connection.synced() ? 'Reconnecting…' : 'Connecting…';
+      case 'connected':
         return 'Saved';
-      case 'error':
-        return autosave.error() instanceof HttpErrorResponse && (autosave.error() as HttpErrorResponse).status === 413
-          ? 'Too large to save'
-          : "Couldn't save";
-      default:
-        return '';
+      case 'offline':
+        return connection.unsynced() ? 'Offline. Your edits will sync when you reconnect.' : 'Offline';
+      case 'closed':
+        return CLOSED_MESSAGES[connection.closedReason() ?? ''] ?? 'Disconnected.';
     }
   });
 
   constructor() {
-    effect(() => {
+    // One connection per page.
+    effect((onCleanup) => {
       const pageId = this.pageId();
+      // Only the page id is a dependency: connecting reads and writes other signals.
+      const connection = untracked(() => {
+        const opened = this.connect(pageId);
+        const user = this.auth.user();
+        opened.awareness.setLocalStateField('user', {
+          id: user?.id ?? `anonymous-${opened.doc.clientID}`,
+          name: user?.email ?? 'Someone',
+        });
+        this.view.set(null);
+        this.connection.set(opened);
+        return opened;
+      });
+      onCleanup(() => connection.destroy());
+    });
+
+    // Once synced (and the page and its old JSON are loaded), decide what the editor shows.
+    effect(() => {
+      const connection = this.connection();
+      const page = this.page.hasValue() ? this.page.value() : undefined;
+      const legacy = this.loadedContent();
+      if (!connection?.synced() || page?.id !== this.pageId() || !legacy || untracked(this.view)) return;
       untracked(() => {
-        this.leave(this.autosave());
-        this.content.set(EMPTY_DOC);
-        this.autosave.set(
-          new Autosave<JSONContent>(
-            (doc) => firstValueFrom(this.http.put(`/api/pages/${pageId}/content`, { content: doc })),
-            this.autosaveDelay,
-          ),
-        );
+        if (page.archived_at) {
+          // Read-only: show a snapshot and stop, so nothing is ever sent for this page.
+          const content = isBlank(connection.doc) ? legacy.content : docToJson(connection.doc);
+          this.view.set({ kind: 'snapshot', content });
+          connection.destroy();
+          return;
+        }
+        if (legacy.content) seedFromJson(connection.doc, legacy.content, editorExtensions(''));
+        this.view.set({ kind: 'live', doc: connection.doc });
       });
     });
-    inject(DestroyRef).onDestroy(() => this.leave(this.autosave()));
   }
 
-  protected contentChanged(doc: JSONContent): void {
-    this.content.set(doc);
-    this.autosave()?.change(doc);
-  }
-
-  protected retrySave(): void {
-    void this.autosave()?.flush();
-  }
-
-  /** Ask the browser to confirm leaving while edits are unsaved, and start saving them. */
+  /** Ask the browser to confirm leaving while edits made offline haven't reached the server. */
   protected warnIfUnsaved(event: BeforeUnloadEvent): void {
-    const autosave = this.autosave();
-    if (!autosave?.hasUnsavedChanges) return;
-    void autosave.flush();
-    event.preventDefault();
+    if (this.connection()?.unsynced()) event.preventDefault();
   }
 
   /** Enter in the title saves it and moves the caret to the start of the content. */
@@ -144,11 +166,5 @@ export class PagePage {
       field.value = page.title;
       this.titleError.set(true);
     }
-  }
-
-  /** Save what's left for the page being left, then stop its timer. */
-  private leave(autosave: Autosave<JSONContent> | null): void {
-    if (!autosave) return;
-    void autosave.flush().finally(() => autosave.dispose());
   }
 }

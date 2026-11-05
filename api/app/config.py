@@ -87,6 +87,10 @@ class Settings:
     # Realtime (T14). With REDIS_URL, API workers share live edits through Redis pub/sub; without it,
     # run a single worker. Live documents are saved this long after the last edit (debounced).
     redis_url: str = os.getenv("REDIS_URL", "")
+    # The API's own public address, for socket URLs handed to the web app (which can't reach the
+    # socket through Vercel's /api forwarding). Render sets RENDER_EXTERNAL_URL by itself. Empty:
+    # the web app opens /ws/... on its own origin (the local dev server forwards it).
+    public_api_url: str = (os.getenv("PUBLIC_API_URL") or os.getenv("RENDER_EXTERNAL_URL") or "").rstrip("/")
     realtime_save_delay_seconds: float = float(os.getenv("REALTIME_SAVE_DELAY_SECONDS") or 2)
     realtime_save_max_delay_seconds: float = 10
     # Largest single WebSocket message accepted, in bytes.

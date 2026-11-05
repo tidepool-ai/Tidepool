@@ -1,5 +1,6 @@
 """Live page documents over WebSocket (T14): `WS /ws/pages/{id}`, Yjs sync plus awareness."""
 
+import re
 import uuid
 from typing import Annotated
 
@@ -26,7 +27,7 @@ CLOSE_TOO_BIG = 1009
 class Ticket(BaseModel):
     ticket: str
     expires_in: int
-    # Path of the page's socket; add ?ticket=<ticket>.
+    # The page's socket (wss://api-host/ws/pages/{id}, or just the path); add ?ticket=<ticket>.
     url: str
 
 
@@ -46,8 +47,15 @@ async def realtime_ticket(
         await pages.get_page(session, page_id, user.id)
     except pages.PageNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Page not found") from None
-    ticket = create_ticket(user.id, page_id)
-    return Ticket(ticket=ticket, expires_in=TICKET_SECONDS, url=f"/ws/pages/{page_id}")
+    return Ticket(ticket=create_ticket(user.id, page_id), expires_in=TICKET_SECONDS, url=socket_url(page_id))
+
+
+def socket_url(page_id: uuid.UUID) -> str:
+    path = f"/ws/pages/{page_id}"
+    base = settings.public_api_url
+    if not base:
+        return path
+    return re.sub(r"^http", "ws", base) + path
 
 
 async def check_access(rooms: RoomManager, page_id: uuid.UUID, user_id: uuid.UUID) -> Access:
