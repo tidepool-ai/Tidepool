@@ -1,0 +1,85 @@
+<p class="visually-hidden" role="status" aria-live="assertive">{{ announcement() }}</p>
+
+@if (group(); as groupBy) {
+  <div class="toolbar">
+    <label class="group-by">
+      <span>Group by</span>
+      <select #groupField [disabled]="readOnly()" (change)="setGroup(groupField.value)">
+        @for (property of store.groupable(); track property.id) {
+          <option [value]="property.id" [selected]="property.id === groupBy.id">{{ property.name }}</option>
+        }
+      </select>
+    </label>
+    @if (store.rows().length >= limit && store.hasMore()) {
+      <span class="note">Showing the first {{ limit }} cards.</span>
+    }
+  </div>
+
+  <div class="board" cdkDropListGroup>
+    @for (column of columns(); track column.id; let ci = $index) {
+      <section class="column" [attr.aria-labelledby]="listId(column.id) + '-title'">
+        <h3 class="column-title" [id]="listId(column.id) + '-title'">
+          @if (column.option; as option) {
+            <span class="chip" [attr.data-color]="option.color">{{ column.name }}</span>
+          } @else {
+            <span class="chip empty">{{ column.name }}</span>
+          }
+          <span class="count" [attr.aria-label]="column.rows.length + (column.rows.length === 1 ? ' card' : ' cards')">{{
+            column.rows.length
+          }}</span>
+        </h3>
+        <ul
+          class="cards"
+          role="list"
+          cdkDropList
+          [id]="listId(column.id)"
+          [cdkDropListData]="column.id"
+          [cdkDropListConnectedTo]="columnIds()"
+          [cdkDropListDisabled]="readOnly()"
+          [attr.aria-label]="column.name"
+          (cdkDropListDropped)="dropped($event)"
+        >
+          @for (row of column.rows; track row.id; let ri = $index) {
+            <li
+              class="card"
+              cdkDrag
+              [cdkDragData]="row"
+              [cdkDragDisabled]="readOnly() || naming() === row.id"
+              [attr.data-card]="row.id"
+              tabindex="0"
+              [attr.aria-label]="title(row) + ', in ' + column.name"
+              [attr.aria-roledescription]="'card'"
+              [attr.aria-grabbed]="lifted()?.rowId === row.id"
+              [attr.aria-describedby]="readOnly() ? null : 'board-help'"
+              [class.lifted]="lifted()?.rowId === row.id"
+              (keydown)="cardKeydown($event, row, ci, ri)"
+            >
+              @if (naming() === row.id) {
+                <input
+                  #titleField
+                  class="title-input"
+                  aria-label="Card title"
+                  maxlength="200"
+                  placeholder="Untitled"
+                  (keydown.enter)="nameCard(row, titleField.value)"
+                  (keydown.escape)="cancelNaming(row)"
+                  (blur)="nameCard(row, titleField.value, false)"
+                />
+              } @else {
+                <span class="card-title" [class.untitled]="!row.title">{{ title(row) }}</span>
+              }
+            </li>
+          }
+        </ul>
+        @if (!readOnly()) {
+          <button type="button" class="new-card" [attr.aria-label]="'New card in ' + column.name" (click)="addCard(column)">
+            <span aria-hidden="true">+</span> New
+          </button>
+        }
+      </section>
+    }
+  </div>
+  <p id="board-help" class="visually-hidden">Space picks the card up; left and right arrows choose a column; Space drops it.</p>
+} @else {
+  <p class="lead">This board needs a Status or Select property to group by.</p>
+}

@@ -1,0 +1,58 @@
+@switch (store.status()) {
+  @case ('ready') {
+    @if (store.database(); as database) {
+      <div class="views">
+        <div class="tabs" role="tablist" aria-label="Views">
+          @for (view of database.views; track view.id; let i = $index) {
+            <button
+              type="button"
+              role="tab"
+              class="tab"
+              [id]="'view-tab-' + view.id"
+              [attr.aria-selected]="view.id === store.view()?.id"
+              [attr.aria-controls]="'view-panel'"
+              [attr.tabindex]="view.id === store.view()?.id ? 0 : -1"
+              (click)="store.selectView(view.id)"
+              (keydown)="tabKeydown($event, i)"
+            >
+              <span class="layout-icon" aria-hidden="true" [attr.data-layout]="view.layout"></span>
+              {{ view.name }}
+            </button>
+          }
+        </div>
+        @if (!readOnly()) {
+          <span class="add-view-wrap">
+            <button type="button" class="add-view" aria-haspopup="menu" [attr.aria-expanded]="adding()" (click)="adding.set(!adding())">
+              <span aria-hidden="true">+</span> Add a view
+            </button>
+            @if (adding()) {
+              <span class="menu" role="menu" aria-label="Add a view" tabindex="-1" (keydown)="menuKeydown($event)">
+                <button type="button" role="menuitem" (click)="addView('table')">Table</button>
+                <button type="button" role="menuitem" (click)="addView('board')">Board</button>
+              </span>
+            }
+          </span>
+        }
+      </div>
+      <div id="view-panel" role="tabpanel" [attr.aria-labelledby]="'view-tab-' + store.view()?.id">
+        @if (store.view()?.layout === 'board') {
+          <app-database-board [readOnly]="readOnly()" />
+        } @else {
+          <app-database-table [readOnly]="readOnly()" [label]="(title() || 'Untitled') + ' table'" />
+        }
+      </div>
+    }
+  }
+  @case ('error') {
+    <p class="error" role="alert">
+      Couldn't load this database.
+      <button type="button" class="link-button" (click)="load()">Try again</button>
+    </p>
+  }
+  @case ('missing') {
+    <p class="error" role="alert">This database can't be found.</p>
+  }
+  @default {
+    <p class="lead" role="status">Loading…</p>
+  }
+}

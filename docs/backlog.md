@@ -49,7 +49,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: tests cover the 10 MVP property types, filter operators and pagination.
 - [x] **T17 Table lens (web)**: Table with inline cell editing, add row, add/rename/retype property, CDK virtual scroll.
   - Done when: 10k rows scroll smoothly in a perf test; editing tested.
-- [ ] **T18 Board lens (web)**: Columns grouped by Status/Select; drag cards between columns updates the property; column counts.
+- [x] **T18 Board lens (web)**: Columns grouped by Status/Select; drag cards between columns updates the property; column counts.
   - Done when: drag and keyboard move tested.
 - [ ] **T19 Row side peek (web)**: Opens a row as a side panel with properties on top and the editor below; open as full page.
   - Done when: URL reflects the open row; Esc closes.
