@@ -1,14 +1,20 @@
 @if (page(); as page) {
   <div class="row" [class.active]="rla.isActive" [style.padding-inline-start.px]="indent()">
-    <button
-      type="button"
-      class="icon-button toggle"
-      [attr.aria-expanded]="expanded()"
-      [attr.aria-label]="(expanded() ? 'Collapse ' : 'Expand ') + name()"
-      (click)="store.toggle(pageId())"
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24" [class.open]="expanded()"><path d="m9 6 6 6-6 6" /></svg>
-    </button>
+    @if (page.isDatabase) {
+      <span class="icon-button toggle database-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 10h16M10 10v9" /></svg>
+      </span>
+    } @else {
+      <button
+        type="button"
+        class="icon-button toggle"
+        [attr.aria-expanded]="expanded()"
+        [attr.aria-label]="(expanded() ? 'Collapse ' : 'Expand ') + name()"
+        (click)="store.toggle(pageId())"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" [class.open]="expanded()"><path d="m9 6 6 6-6 6" /></svg>
+      </button>
+    }
 
     <a
       #link
@@ -42,9 +48,11 @@
         <button type="button" class="icon-button" [attr.aria-label]="'Rename ' + name()" (click)="startRename()">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" /></svg>
         </button>
-        <button type="button" class="icon-button" [attr.aria-label]="'Add a page inside ' + name()" (click)="addChild()">
-          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-        </button>
+        @if (!page.isDatabase) {
+          <button type="button" class="icon-button" [attr.aria-label]="'Add a page inside ' + name()" (click)="addChild()">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+          </button>
+        }
         <button type="button" class="icon-button" [attr.aria-label]="'Move ' + name() + ' to trash'" (click)="trash()">
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13" /></svg>
         </button>

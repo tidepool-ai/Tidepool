@@ -1,4 +1,4 @@
-# Databases (API)
+# Databases
 
 A database (T16, FR-11 to FR-13) is a page with a property schema. Its rows are pages too: children
 of the database's page with `database_id` set and their values in `properties`. Rows don't appear in
@@ -55,3 +55,13 @@ status sort in option order. Empty values sort last in both directions; ties kee
 
 Pagination uses cursors: pass `next_cursor` back as `cursor` with the same filter and sorts. A cursor
 from another query is refused. Pages never skip or repeat rows, even with ties and empty values.
+
+## In the web app
+
+- The sidebar's table button creates a database; database pages show their **Table** (T17) instead of
+  the editor (`features/database/`). Pages say whether they hold a database with `is_database`.
+- The table is an ARIA grid: arrows / Home / End / PageUp / PageDown move, Enter or typing edits,
+  Enter saves and moves down, Tab saves and moves right, Escape cancels, Delete clears, Space toggles
+  a checkbox. Edits show at once and go back if the server refuses them.
+- Only the rows in view are in the page (CDK virtual scroll, 36 px rows); more rows load 100 at a
+  time as the end comes into view. Column menus rename a property or change its type; "+" adds one.

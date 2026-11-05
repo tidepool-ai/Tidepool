@@ -52,6 +52,7 @@ class Page(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.clock_timestamp(), onupdate=func.clock_timestamp()
     )
+    # `is_database` (does this page hold a database?) is added in app.databases.models.
 
 
 class PageContent(Base):

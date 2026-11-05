@@ -1,15 +1,28 @@
 <section class="page-tree" aria-labelledby="private-heading">
   <div class="header">
     <h2 class="overline" id="private-heading">Private</h2>
-    <button
-      type="button"
-      class="add-page"
-      aria-label="Add a page"
-      [disabled]="store.status() !== 'ready'"
-      (click)="store.create(null)"
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
-    </button>
+    <span class="header-actions">
+      <button
+        type="button"
+        class="add-page"
+        aria-label="Add a page"
+        title="Add a page"
+        [disabled]="store.status() !== 'ready'"
+        (click)="store.create(null)"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
+      <button
+        type="button"
+        class="add-page"
+        aria-label="Add a database"
+        title="Add a database"
+        [disabled]="store.status() !== 'ready'"
+        (click)="store.create(null, 'database')"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 10h16M10 10v9" /></svg>
+      </button>
+    </span>
   </div>
 
   @switch (store.status()) {

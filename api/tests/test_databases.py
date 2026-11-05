@@ -104,7 +104,10 @@ async def test_a_new_database_is_a_page_with_a_title_property_and_a_table_view(a
     assert db.data["properties"] == [{"id": "title", "name": "Name", "type": "title"}]
     assert [(v["name"], v["layout"]) for v in db.data["views"]] == [("Table", "table")]
     tree = (await ada.client.get(f"/api/workspaces/{ada.workspace_id}/pages", headers=ada.headers)).json()
-    assert db.data["page_id"] in [page["id"] for page in tree]
+    flags = {page["id"]: page["is_database"] for page in tree}
+    assert flags[db.data["page_id"]] is True
+    plain = await ada.new_page()
+    assert (await ada.client.get(f"/api/pages/{plain}", headers=ada.headers)).json()["is_database"] is False
     by_page = await ada.client.get(f"/api/pages/{db.data['page_id']}/database", headers=ada.headers)
     assert by_page.json()["id"] == db.id
     assert (
