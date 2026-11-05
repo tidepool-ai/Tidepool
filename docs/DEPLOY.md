@@ -54,6 +54,11 @@ about a minute, and may time out once. Try again.
 If the free Render service was asleep, the app shows "Waking up the server" and waits (up to about
 90 seconds) before signing in; nothing needs retrying by hand.
 
+Live editing (T15) opens a WebSocket from the browser straight to the Render service (Vercel's
+forwarding doesn't carry WebSockets). Render sets `RENDER_EXTERNAL_URL` by itself, so there is nothing
+to configure. To check it: open a page in two tabs and type in one; the other updates within a
+second and both say "Saved".
+
 ## 5. Email: Resend
 
 1. Sign up at [resend.com](https://resend.com) and create an **API key** (permission: Sending

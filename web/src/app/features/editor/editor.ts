@@ -16,7 +16,11 @@ import {
 import { Editor, Extensions, JSONContent } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
 import Image from '@tiptap/extension-image';
+import Collaboration, { isChangeOrigin } from '@tiptap/extension-collaboration';
 import UniqueID from '@tiptap/extension-unique-id';
+import * as Y from 'yjs';
+import { KeepCaret } from './collab/keep-caret';
+import { COLLAB_FIELD } from './collab/seed';
 import StarterKit from '@tiptap/starter-kit';
 import { blockExtensions } from './blocks';
 import { BLOCK_ID_TYPES } from './handle/block-commands';
@@ -41,6 +45,7 @@ export function editorExtensions(
   placeholder: string,
   slash: SlashMenuController | null = null,
   uploader: () => ImageUploader | null = () => null,
+  ydoc: Y.Doc | null = null,
 ): Extensions {
   return [
     SlashMenu.configure({ controller: slash }),
@@ -49,13 +54,21 @@ export function editorExtensions(
       // Replaced by the highlighted code block in ./blocks.
       codeBlock: false,
       link: false,
+      // Live documents bring their own undo (each person undoes only their own edits).
+      ...(ydoc ? { undoRedo: false as const } : {}),
     }),
+    ...(ydoc ? [Collaboration.configure({ document: ydoc, field: COLLAB_FIELD }), KeepCaret.configure({ document: ydoc })] : []),
     ...blockExtensions(),
     // Image blocks (FR-3). Pasted data: URLs are dropped; images are uploaded instead (T13).
     Image.configure({ inline: false, allowBase64: false, HTMLAttributes: { class: 'tp-image' } }),
     ImageUpload.configure({ uploader }),
     // Stable block ids, so a link can point at a block (block menu > Copy link).
-    UniqueID.configure({ types: BLOCK_ID_TYPES, attributeName: 'id' }),
+    UniqueID.configure({
+      types: BLOCK_ID_TYPES,
+      attributeName: 'id',
+      // Other people's edits arrive with their ids; filling them in again would fight over them.
+      filterTransaction: (transaction) => !isChangeOrigin(transaction),
+    }),
     BlockKeys,
     BlockFlash,
     Placeholder.configure({ placeholder }),
@@ -65,8 +78,8 @@ export function editorExtensions(
 /**
  * Tiptap (ProseMirror) editor wrapped as an Angular component.
  *
- * `content` is read once, when the editor is created; recreate the component to load another
- * document (the page view does this per page, so undo history never crosses pages).
+ * `content` (or the live `ydoc`) is read once, when the editor is created; recreate the component to
+ * load another document (the page view does this per page, so undo history never crosses pages).
  * Every change is emitted as Tiptap JSON through `contentChange`.
  */
 @Component({
@@ -86,6 +99,8 @@ export function editorExtensions(
 })
 export class EditorComponent {
   readonly content = input<JSONContent | null>(null);
+  /** A live document to edit together (T15); `content` is ignored then. Read once, at creation. */
+  readonly ydoc = input<Y.Doc | null>(null);
   readonly label = input('Page content');
   readonly placeholder = input('Start writing…');
   /** False shows the document read-only (e.g. a page in the trash). */
@@ -113,8 +128,8 @@ export class EditorComponent {
     afterNextRender(() => {
       this.editor = new Editor({
         element: this.host().nativeElement,
-        extensions: editorExtensions(this.placeholder(), this.slash, () => this.uploadImage()),
-        content: this.content() ?? EMPTY_DOC,
+        extensions: editorExtensions(this.placeholder(), this.slash, () => this.uploadImage(), this.ydoc()),
+        ...(this.ydoc() ? {} : { content: this.content() ?? EMPTY_DOC }),
         editable: this.editable(),
         editorProps: {
           attributes: {

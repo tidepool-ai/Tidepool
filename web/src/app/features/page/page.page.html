@@ -4,10 +4,8 @@
 } @else if (page.hasValue()) {
   @let current = page.value();
   <div class="status-bar">
-    <span class="save-status" role="status" aria-live="polite">{{ saveMessage() }}</span>
-    @if (autosave()?.status() === 'error') {
-      <button type="button" class="link-button" (click)="retrySave()">Retry</button>
-    }
+    <app-presence [awareness]="connection()?.awareness ?? null" [selfId]="auth.user()?.id ?? null" />
+    <span class="save-status" role="status" aria-live="polite">{{ statusMessage() }}</span>
   </div>
   @if (current.archived_at) {
     <p class="banner" role="status">This page is in the trash. Restore it to edit.</p>
@@ -28,22 +26,29 @@
     <p id="title-error" class="error" role="alert">Couldn't save the title. Try again.</p>
   }
   @if (saved.error()) {
-    <!-- Never show an empty editor here: autosaving it would overwrite the real content. -->
+    <!-- Without the saved content we can't tell whether it still has to be copied into the live document. -->
     <p class="error" role="alert">
       Couldn't load this page's content.
       <button type="button" class="link-button" (click)="saved.reload()">Try again</button>
     </p>
-  } @else if (loadedContent(); as loaded) {
-    @for (id of [loaded.page_id]; track id) {
-      <app-editor
-        [content]="loaded.content"
-        [editable]="!current.archived_at"
-        [pageId]="loaded.page_id"
-        [focusBlock]="focusBlock()"
-        [uploadImage]="uploadImage"
-        (contentChange)="contentChanged($event)"
-      />
+  } @else if (view(); as shown) {
+    @for (id of [pageId()]; track id) {
+      @if (shown.kind === 'live') {
+        <app-editor
+          [ydoc]="shown.doc"
+          [editable]="editable()"
+          [pageId]="id"
+          [focusBlock]="focusBlock()"
+          [uploadImage]="uploadImage"
+        />
+      } @else {
+        <app-editor [content]="shown.content" [editable]="false" [pageId]="id" [focusBlock]="focusBlock()" />
+      }
     }
+  } @else if (connection()?.status() === 'closed') {
+    <p class="error" role="alert">{{ statusMessage() }}</p>
+  } @else if (connection()?.status() === 'offline') {
+    <p class="lead" role="status">Can't reach the server. This page opens when you're back online.</p>
   } @else {
     <p class="lead" role="status">Loading…</p>
   }

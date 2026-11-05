@@ -40,7 +40,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
 
 - [x] **T14 Realtime service (api)**: `WS /ws/pages/{id}` speaking the Yjs sync protocol with pycrdt; room per page; state persisted (debounced 2 s) to `page_docs`; Redis pub/sub between workers.
   - Done when: two clients converge in a test; permission checked on connect and on each update.
-- [ ] **T15 Collaborative editing (web)**: y-prosemirror binding replaces REST saving for content; presence avatars in the top bar.
+- [x] **T15 Collaborative editing (web)**: y-prosemirror binding replaces REST saving for content; presence avatars in the top bar.
   - Done when: two browser tabs edit the same page live; reconnect after offline works.
 
 ## Phase 3: Databases

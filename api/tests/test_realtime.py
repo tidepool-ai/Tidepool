@@ -119,6 +119,24 @@ class TestTickets:
         as_bob = await bob.client.post(f"/api/pages/{page_id}/realtime-ticket", headers=bob.headers)
         assert as_bob.status_code == 404
 
+    @pytest.mark.parametrize(
+        ("public", "expected"),
+        [
+            ("https://api.example.com", "wss://api.example.com"),
+            ("http://localhost:8000/", "ws://localhost:8000"),
+        ],
+    )
+    async def test_ticket_points_at_the_api_host_when_it_is_known(
+        self, ada: User, monkeypatch: pytest.MonkeyPatch, public: str, expected: str
+    ) -> None:
+        from app.realtime import router as realtime_router
+
+        configured = dataclasses.replace(realtime_router.settings, public_api_url=public.rstrip("/"))
+        monkeypatch.setattr(realtime_router, "settings", configured)
+        page_id = await ada.new_page()
+        response = await ada.client.post(f"/api/pages/{page_id}/realtime-ticket", headers=ada.headers)
+        assert response.json()["url"] == f"{expected}/ws/pages/{page_id}"
+
     @pytest.mark.parametrize("kind", ["missing", "other page", "expired", "access token", "garbage"])
     async def test_socket_refuses_bad_tickets(self, ada: User, kind: str) -> None:
         page_id = await ada.new_page()
