@@ -31,7 +31,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: tests cover filtering and keyboard selection.
 - [x] **T11 More blocks (web)**: To-do, toggle, quote, callout, divider, code (with language + highlighting); Markdown shortcuts per FR-5.
   - Done when: each shortcut has a test.
-- [ ] **T12 Block handle (web)**: Hover handle with drag-to-reorder and block menu (turn into, duplicate, delete, copy link).
+- [x] **T12 Block handle (web)**: Hover handle with drag-to-reorder and block menu (turn into, duplicate, delete, copy link).
   - Done when: reorder persists; menu actions tested.
 - [ ] **T13 Images (api + web)**: `POST /api/files/presign` (S3/MinIO, 25 MB limit, image types only); paste or upload image into the editor.
   - Done when: API validates type/size; editor shows upload progress and error state.

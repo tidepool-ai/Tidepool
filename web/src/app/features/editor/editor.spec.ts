@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Editor, JSONContent } from '@tiptap/core';
-import { press, type } from '../../../testing/editor-testing';
+import { press, stripIds, type } from '../../../testing/editor-testing';
 import { stubLayoutForProseMirror } from '../../../testing/prosemirror-jsdom';
 import { EMPTY_DOC, EditorComponent } from './editor';
 
@@ -16,7 +16,7 @@ class Host {
 }
 
 /** The document as plain JSON (Tiptap v3 types getJSON() more narrowly). */
-const doc = (editor: Editor): JSONContent => editor.getJSON() as JSONContent;
+const doc = (editor: Editor): JSONContent => stripIds(editor.getJSON() as JSONContent);
 
 /**
  * Block types in order, without the empty paragraph Tiptap's TrailingNode keeps after a final
@@ -75,7 +75,7 @@ describe('EditorComponent', () => {
     await render();
     type(editor, 'Hello');
 
-    expect(host.changes.at(-1)).toEqual({
+    expect(stripIds(host.changes.at(-1))).toEqual({
       type: 'doc',
       content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }],
     });
@@ -146,7 +146,7 @@ describe('EditorComponent', () => {
       type(editor, 'Draft');
       press(editor, 'z', { ctrl: true });
       expect(editor.getText()).toBe('');
-      expect(host.changes.at(-1)).toEqual(EMPTY_DOC);
+      expect(stripIds(host.changes.at(-1))).toEqual(EMPTY_DOC);
 
       press(editor, 'z', { ctrl: true, shift: true });
       expect(editor.getText()).toBe('Draft');

@@ -4,6 +4,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { JSONContent } from '@tiptap/core';
 import { settle } from '../../../testing/auth-testing';
+import { stripIds } from '../../../testing/editor-testing';
 import { stubLayoutForProseMirror } from '../../../testing/prosemirror-jsdom';
 import { EMPTY_DOC, EditorComponent } from '../editor/editor';
 import { PageTreeStore } from '../page-tree/page-tree.store';
@@ -96,10 +97,21 @@ describe('PagePage', () => {
       expect(saveStatus()).toBe('');
     });
 
-    it('restores saved content into the editor', async () => {
-      await open('p1', page('p1', 'Notes'), saved('p1', paragraph('Hello again')));
+    it('restores saved content into the editor, and loading is not an edit', async () => {
+      const withIds = { type: 'doc', content: [{ ...paragraph('Hello again').content![0], attrs: { id: 'b1' } }] };
+      await open('p1', page('p1', 'Notes'), saved('p1', withIds));
       expect(textbox()!.textContent).toContain('Hello again');
-      http.expectNone((r) => r.method === 'PUT'); // loading isn't an edit
+      await wait(DELAY + 20);
+      http.expectNone((r) => r.method === 'PUT');
+    });
+
+    it('saves block ids once for content saved before blocks had them', async () => {
+      await open('p1', page('p1', 'Notes'), saved('p1', paragraph('Old page')));
+      await wait(DELAY + 20);
+      const save = http.expectOne((r) => r.method === 'PUT');
+      expect(save.request.body.content.content[0].attrs.id).toBeTruthy();
+      save.flush(saved('p1'));
+      await stable();
     });
 
     it('never shows an editor if the content fails to load, so nothing gets overwritten', async () => {
@@ -131,11 +143,11 @@ describe('PagePage', () => {
       await open('p1', page('p1', 'Notes'));
       const request = await typeAndWait('Hi');
 
-      expect(request.request.body).toEqual({ content: paragraph('Hi') });
+      expect(stripIds(request.request.body)).toEqual({ content: paragraph('Hi') });
       request.flush(saved('p1', paragraph('Hi')));
       await stable();
       expect(saveStatus()).toBe('Saved');
-      expect(fixture.componentInstance.content()).toEqual(paragraph('Hi'));
+      expect(stripIds(fixture.componentInstance.content())).toEqual(paragraph('Hi'));
     });
 
     it('announces the save state politely to screen readers', async () => {
@@ -154,7 +166,7 @@ describe('PagePage', () => {
       element.querySelector<HTMLButtonElement>('.status-bar .link-button')!.click();
       await settle();
       const retry = http.expectOne((r) => r.method === 'PUT');
-      expect(retry.request.body).toEqual({ content: paragraph('Hi') });
+      expect(stripIds(retry.request.body)).toEqual({ content: paragraph('Hi') });
       retry.flush(saved('p1', paragraph('Hi')));
       await stable();
       expect(saveStatus()).toBe('Saved');
@@ -177,7 +189,7 @@ describe('PagePage', () => {
       await settle();
       const flushed = http.expectOne((r) => r.method === 'PUT');
       expect(flushed.request.url).toBe('/api/pages/p1/content');
-      expect(flushed.request.body).toEqual({ content: paragraph('Unsaved') });
+      expect(stripIds(flushed.request.body)).toEqual({ content: paragraph('Unsaved') });
       flushed.flush(saved('p1', paragraph('Unsaved')));
       http.expectOne('/api/pages/p2').flush(page('p2', 'Two'));
       http.expectOne('/api/pages/p2/content').flush(saved('p2'));
@@ -215,8 +227,10 @@ describe('PagePage', () => {
   });
 
   describe('trashed pages', () => {
-    it('shows the content read-only, with a banner', async () => {
+    it('shows the content read-only, with a banner, and never tries to save it', async () => {
       await open('p1', page('p1', 'Old', '2026-11-01T00:00:00Z'), saved('p1', paragraph('Kept')));
+      await wait(DELAY + 20);
+      http.expectNone((r) => r.method === 'PUT');
       expect(element.querySelector('.banner')!.textContent).toContain('in the trash');
       expect(textbox()!.getAttribute('contenteditable')).toBe('false');
       expect(title()!.readOnly).toBe(true);
@@ -232,7 +246,7 @@ describe('PagePage', () => {
       title()!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       await settle();
       const request = http.expectOne((r) => r.method === 'PATCH');
-      expect(request.request.body).toEqual({ title: 'Launch plan' });
+      expect(stripIds(request.request.body)).toEqual({ title: 'Launch plan' });
       request.flush(page('p1', 'Launch plan'));
       await stable();
 
@@ -271,6 +285,6 @@ describe('PagePage', () => {
 
   it('starts from an empty document for a new page', async () => {
     await open('p1', page('p1', 'One'));
-    expect(fixture.componentInstance.content()).toEqual(EMPTY_DOC);
+    expect(stripIds(fixture.componentInstance.content())).toEqual(EMPTY_DOC);
   });
 });

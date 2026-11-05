@@ -1,0 +1,136 @@
+.handle {
+  position: absolute;
+  left: -44px;
+  z-index: 5;
+}
+
+@media (max-width: 767px) {
+  .handle {
+    left: 0;
+  }
+
+  // No hover on touch screens: keep the handle visible.
+  .grip {
+    opacity: 1;
+  }
+}
+
+// Quiet chrome: visible on hover of the editor area, or when the handle has focus.
+.grip {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 150ms ease;
+}
+
+:host-context(.tp-editor-wrap:hover) .grip,
+:host-context(.tp-editor-wrap:focus-within) .grip,
+.grip:focus-visible,
+.grip[aria-expanded='true'] {
+  opacity: 1;
+}
+
+.grip:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  color: var(--color-text);
+}
+
+.grip svg {
+  width: 18px;
+  height: 18px;
+  fill: currentcolor;
+}
+
+.menu {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 30;
+  width: 240px;
+  max-height: min(420px, 70vh);
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--color-rail) 18%, transparent);
+}
+
+.group-label {
+  margin: 4px 8px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.item:disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.item[aria-checked='true'] {
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.item kbd {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.icon {
+  display: inline-grid;
+  width: 20px;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+hr {
+  height: 1px;
+  margin: 6px 0;
+  border: 0;
+  background: var(--color-border);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

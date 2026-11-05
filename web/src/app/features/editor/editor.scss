@@ -277,3 +277,21 @@
   color: var(--color-muted);
   font-style: italic;
 }
+
+// Block handle sits in the left gutter; keep room for it.
+.tp-editor-wrap {
+  position: relative;
+}
+
+// Narrow screens have no gutter outside the page, so make room inside it.
+@media (max-width: 767px) {
+  .tp-editor-wrap {
+    padding-left: 36px;
+  }
+}
+
+.tp-editor .tp-flash {
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  transition: background-color 600ms ease;
+}

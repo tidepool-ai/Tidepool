@@ -38,6 +38,8 @@
       <app-editor
         [content]="loaded.content"
         [editable]="!current.archived_at"
+        [pageId]="loaded.page_id"
+        [focusBlock]="focusBlock()"
         (contentChange)="contentChanged($event)"
       />
     }
