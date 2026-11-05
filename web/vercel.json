@@ -5,7 +5,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/web/browser",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://tidepool-api.onrender.com/api/:path*" },
+    { "source": "/api/:path*", "destination": "https://tidepool-api-bspw.onrender.com/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
