@@ -87,7 +87,10 @@ async def trash_page(page_id: uuid.UUID, user: CurrentUser, session: Session) ->
 
 @router.post("/api/pages/{page_id}/restore")
 async def restore_page(page_id: uuid.UUID, user: CurrentUser, session: Session) -> PageOut:
-    page = await service.restore_page(session, await _load(session, page_id, user.id, for_update=True))
+    try:
+        page = await service.restore_page(session, await _load(session, page_id, user.id, for_update=True))
+    except service.PageConflictError as exc:
+        raise _bad_request(exc) from None
     await session.commit()
     return _out(page)
 

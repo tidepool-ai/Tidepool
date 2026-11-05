@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.router import router as auth_router
 from app.config import settings
+from app.databases.router import router as databases_router
 from app.db import SessionLocal, get_session
 from app.files.router import router as files_router
 from app.pages.router import router as pages_router
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
     app.include_router(workspaces_router)
     app.include_router(pages_router)
     app.include_router(files_router)
+    app.include_router(databases_router)
     app.include_router(realtime_router)
 
     # Also under /api so the web app can reach it through its /api forwarding (and wake a sleeping host).

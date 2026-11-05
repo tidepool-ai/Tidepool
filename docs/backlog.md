@@ -45,7 +45,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
 
 ## Phase 3: Databases
 
-- [ ] **T16 Database API (api)**: Database schema (property definitions), rows as pages with properties; `POST /api/databases/{id}/query` with filters, sorts and cursor pagination; views stored per database.
+- [x] **T16 Database API (api)**: Database schema (property definitions), rows as pages with properties; `POST /api/databases/{id}/query` with filters, sorts and cursor pagination; views stored per database.
   - Done when: tests cover the 10 MVP property types, filter operators and pagination.
 - [ ] **T17 Table lens (web)**: Table with inline cell editing, add row, add/rename/retype property, CDK virtual scroll.
   - Done when: 10k rows scroll smoothly in a perf test; editing tested.
