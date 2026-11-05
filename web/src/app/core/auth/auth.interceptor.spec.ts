@@ -2,7 +2,7 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
-import { rejectRefresh, settle, signIn, tokenResponse } from '../../../testing/auth-testing';
+import { rejectRefresh, settle, signIn, tokenResponse, provideAwakeServer } from '../../../testing/auth-testing';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from './auth.service';
 
@@ -13,7 +13,7 @@ describe('authInterceptor', () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting()],
+      providers: [provideHttpClient(withInterceptors([authInterceptor])), provideHttpClientTesting(), provideAwakeServer()],
     });
     client = TestBed.inject(HttpClient);
     http = TestBed.inject(HttpTestingController);

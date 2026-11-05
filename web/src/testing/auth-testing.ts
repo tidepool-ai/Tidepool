@@ -1,4 +1,6 @@
 import { HttpTestingController } from '@angular/common/http/testing';
+import { Provider, signal } from '@angular/core';
+import { ServerWake } from '../app/core/server-wake';
 import { AuthService, AuthUser } from '../app/core/auth/auth.service';
 
 export const USER: AuthUser = { id: 'u-1', email: 'ada@example.com' };
@@ -22,4 +24,9 @@ export async function signIn(auth: AuthService, http: HttpTestingController, use
 /** Answer the guard's session check as "no session" (refresh cookie missing or expired). */
 export function rejectRefresh(http: HttpTestingController): void {
   http.expectOne('/api/auth/refresh').flush({ detail: 'nope' }, { status: 401, statusText: 'Unauthorized' });
+}
+
+/** A server that is always awake, so specs don't have to answer health checks. */
+export function provideAwakeServer(): Provider {
+  return { provide: ServerWake, useValue: { isAwake: () => true, ready: async () => true, waking: signal(false) } };
 }

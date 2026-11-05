@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { USER, settle, tokenResponse } from '../../../testing/auth-testing';
+import { USER, settle, tokenResponse, provideAwakeServer } from '../../../testing/auth-testing';
 import { routes } from '../../app.routes';
 
 describe('VerifyPage', () => {
@@ -13,7 +13,7 @@ describe('VerifyPage', () => {
   beforeEach(async () => {
     localStorage.clear();
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), provideAwakeServer()],
     });
     http = TestBed.inject(HttpTestingController);
     harness = await RouterTestingHarness.create();
