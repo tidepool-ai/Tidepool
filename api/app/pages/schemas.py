@@ -41,6 +41,8 @@ class PageOut(BaseModel):
     archived_at: datetime | None
     # Set for database rows (T16).
     database_id: uuid.UUID | None = None
+    # True for a database's own page (T17).
+    is_database: bool = False
     created_at: datetime
     updated_at: datetime
 

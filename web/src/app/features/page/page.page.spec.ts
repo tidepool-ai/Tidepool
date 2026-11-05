@@ -214,6 +214,19 @@ describe('PagePage (live editing, T15)', () => {
     });
   });
 
+  describe('database pages (T17)', () => {
+    it('show the table instead of the editor, without a live document', async () => {
+      const tab = await open('p1', { ...page('p1', 'Tasks'), is_database: true });
+      expect(server.connections).toHaveLength(0); // nothing to edit live
+      expect(tab.textbox()).toBeNull();
+      expect(tab.element.querySelector('app-database-view')).toBeTruthy();
+      expect(tab.element.querySelector<HTMLElement>('.status-bar')!.hidden).toBe(true);
+      http.expectOne('/api/pages/p1/database').flush(null, { status: 404, statusText: 'Not found' });
+      await stable(tab);
+      expect(tab.element.querySelector('app-database-view [role="alert"]')!.textContent).toContain("can't be found");
+    });
+  });
+
   describe('two tabs', () => {
     it('edit the same page live, with nothing saved over REST', async () => {
       const a = await open('p1', page('p1', 'Notes'));

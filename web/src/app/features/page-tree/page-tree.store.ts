@@ -10,6 +10,8 @@ export interface ApiPage {
   parent_id: string | null;
   title: string;
   icon: string | null;
+  /** True for a database's page (T17). */
+  is_database?: boolean;
 }
 
 interface ApiWorkspace {
@@ -22,6 +24,8 @@ export interface TreePage {
   parentId: string | null;
   title: string;
   icon: string | null;
+  /** Databases have rows, not subpages. */
+  isDatabase: boolean;
 }
 
 /** Key for the top level in `children`. */
@@ -55,7 +59,7 @@ export function pageTitle(page: Pick<TreePage, 'title'> | undefined): string {
 }
 
 function toTreePage(page: ApiPage): TreePage {
-  return { id: page.id, parentId: page.parent_id, title: page.title, icon: page.icon };
+  return { id: page.id, parentId: page.parent_id, title: page.title, icon: page.icon, isDatabase: !!page.is_database };
 }
 
 /**
@@ -106,14 +110,25 @@ export const PageTreeStore = signalStore(
 
       toggle,
 
-      /** Create an untitled page (top level, or inside `parentId`) and start renaming it. */
-      async create(parentId: string | null): Promise<TreePage | null> {
+      /** Create an untitled page or database (top level, or inside `parentId`) and start renaming it. */
+      async create(parentId: string | null, kind: 'page' | 'database' = 'page'): Promise<TreePage | null> {
         const workspaceId = store.workspaceId();
         if (!workspaceId) return null;
+        const body = { workspace_id: workspaceId, parent_id: parentId };
         try {
-          const page = await firstValueFrom(
-            http.post<ApiPage>('/api/pages', { workspace_id: workspaceId, parent_id: parentId }),
-          );
+          const page: ApiPage =
+            kind === 'database'
+              ? await firstValueFrom(http.post<{ page_id: string; title: string }>('/api/databases', body)).then(
+                  (database) => ({
+                    id: database.page_id,
+                    workspace_id: workspaceId,
+                    parent_id: parentId,
+                    title: database.title,
+                    icon: null,
+                    is_database: true,
+                  }),
+                )
+              : await firstValueFrom(http.post<ApiPage>('/api/pages', body));
           const key = parentId ?? ROOT;
           const siblings = store.children()[key];
           patchState(store, (state) => ({
@@ -123,10 +138,10 @@ export const PageTreeStore = signalStore(
             renamingId: page.id,
           }));
           if (parentId && !store.expanded()[parentId]) await toggle(parentId);
-          announce('Page created');
+          announce(kind === 'database' ? 'Database created' : 'Page created');
           return toTreePage(page);
         } catch {
-          announce("Couldn't create the page");
+          announce(kind === 'database' ? "Couldn't create the database" : "Couldn't create the page");
           return null;
         }
       },

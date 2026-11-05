@@ -4,11 +4,12 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Uuid, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Uuid, exists, func
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, column_property, mapped_column
 
 from app.db import Base
+from app.pages.models import Page
 
 
 class Database(Base):
@@ -42,3 +43,7 @@ class DatabaseView(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.clock_timestamp()
     )
+
+
+# Whether a page holds a database (its view is the database's table, not the editor).
+Page.is_database = column_property(exists().where(Database.page_id == Page.id).correlate_except(Database))

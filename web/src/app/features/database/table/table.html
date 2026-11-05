@@ -1,0 +1,248 @@
+@if (store.error(); as error) {
+  <p class="alert" role="alert">
+    {{ error }}
+    <button type="button" class="link-button" (click)="store.dismissError()">Dismiss</button>
+  </p>
+}
+<p class="visually-hidden" role="status" aria-live="polite">{{ store.announcement() }}</p>
+
+<div class="scroller">
+  <div
+    class="grid"
+    role="grid"
+    [attr.aria-label]="label()"
+    [attr.aria-rowcount]="rowCount()"
+    [attr.aria-colcount]="columns().length"
+    [attr.aria-readonly]="readOnly() || null"
+    [style.width.px]="totalWidth()"
+  >
+    <div class="header" role="row" aria-rowindex="1">
+      @for (property of columns(); track property.id; let c = $index) {
+        <div class="column" role="columnheader" [attr.aria-colindex]="c + 1" [style.width.px]="widths()[c]">
+          <button
+            type="button"
+            class="column-button"
+            [attr.data-header]="property.id"
+            [attr.aria-expanded]="menuFor() === property.id"
+            [attr.aria-label]="property.name + ', ' + typeLabel(property.type) + ' property'"
+            [disabled]="readOnly()"
+            (click)="toggleMenu(property.id)"
+          >
+            <span class="type-icon" aria-hidden="true" [attr.data-type]="property.type"></span>
+            <span class="column-name">{{ property.name }}</span>
+          </button>
+          @if (menuFor() === property.id) {
+            <div class="panel" role="dialog" [attr.aria-label]="'Edit property ' + property.name" (keydown)="panelKeydown($event, property.id)">
+              <label class="field">
+                <span>Name</span>
+                <input #nameField [value]="property.name" maxlength="100" (keydown.enter)="rename(property, nameField.value, true)" (blur)="rename(property, nameField.value)" />
+              </label>
+              @if (property.type !== 'title') {
+                <label class="field">
+                  <span>Type</span>
+                  <select #typeField [value]="retype()?.type ?? property.type" (change)="askRetype(property, typeField.value)">
+                    @for (option of types; track option.type) {
+                      <option [value]="option.type">{{ option.label }}</option>
+                    }
+                  </select>
+                </label>
+                @if (retype(); as pending) {
+                  <p class="warning">Changing the type to {{ typeLabel(pending.type) }} clears this column's values.</p>
+                  <div class="actions">
+                    <button type="button" class="primary" (click)="confirmRetype()">Change type</button>
+                    <button type="button" (click)="retype.set(null)">Cancel</button>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+      <div class="column add-column" role="columnheader" [attr.aria-colindex]="columns().length + 1">
+        <button type="button" class="column-button" data-header="add" aria-label="Add a property" [attr.aria-expanded]="adding()" [disabled]="readOnly()" (click)="openAdd()">
+          <span aria-hidden="true">+</span>
+        </button>
+        @if (adding()) {
+          <div class="panel end" role="dialog" aria-label="Add a property" (keydown)="panelKeydown($event, 'add')">
+            <label class="field">
+              <span>Name</span>
+              <input #newName maxlength="100" placeholder="Property name" (keydown.enter)="add(newName.value, newType.value)" />
+            </label>
+            <label class="field">
+              <span>Type</span>
+              <select #newType>
+                @for (option of types; track option.type) {
+                  <option [value]="option.type">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+            <div class="actions">
+              <button type="button" class="primary" (click)="add(newName.value, newType.value)">Add</button>
+              <button type="button" (click)="closePanels('add')">Cancel</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <cdk-virtual-scroll-viewport
+      class="body"
+      [itemSize]="rowHeight"
+      [minBufferPx]="rowHeight * 8"
+      [maxBufferPx]="rowHeight * 16"
+      [style.height.px]="viewportHeight()"
+      (scrolledIndexChange)="scrolled($event)"
+    >
+      <div
+        *cdkVirtualFor="let row of rows(); let r = index; trackBy: trackRow"
+        class="row"
+        role="row"
+        [attr.aria-rowindex]="r + 2"
+        [style.height.px]="rowHeight"
+      >
+        @for (property of columns(); track property.id; let c = $index) {
+          <div
+            class="cell"
+            role="gridcell"
+            [attr.data-cell]="r + ':' + c"
+            [attr.aria-colindex]="c + 1"
+            [attr.aria-label]="cellLabel(row, property)"
+            [attr.tabindex]="isActive(r, c) || (!active() && r === 0 && c === 0) ? 0 : -1"
+            [class.active]="isActive(r, c)"
+            [class.editing]="isEditing(r, c)"
+            [attr.data-type]="property.type"
+            [style.width.px]="widths()[c]"
+            (click)="activate(r, c)"
+            (keydown)="keydown($event)"
+            (dblclick)="startEditing({ row: r, col: c })"
+          >
+            @if (isEditing(r, c)) {
+              @switch (property.type) {
+                @case ('date') {
+                  <input
+                    #dateField
+                    class="editor"
+                    type="date"
+                    [attr.aria-label]="property.name"
+                    [value]="dateDraft(row, property)"
+                    (keydown.enter)="commitDate(row, property, dateField.value)"
+                    (keydown.escape)="cancelEditing($event)"
+                    (blur)="isEditing(r, c) && commitDate(row, property, dateField.value)"
+                  />
+                }
+                @case ('select') {
+                  <select #choice class="editor" [attr.aria-label]="property.name" (change)="commitChoice(row, property, choice.value)" (keydown.escape)="cancelEditing($event)" (blur)="cancelEditing($event)">
+                    <option value="" [selected]="!row.properties[property.id]">Empty</option>
+                    @for (option of property.options ?? []; track option.id) {
+                      <option [value]="option.id" [selected]="row.properties[property.id] === option.id">{{ option.name }}</option>
+                    }
+                  </select>
+                }
+                @case ('status') {
+                  <select #choice class="editor" [attr.aria-label]="property.name" (change)="commitChoice(row, property, choice.value)" (keydown.escape)="cancelEditing($event)" (blur)="cancelEditing($event)">
+                    <option value="" [selected]="!row.properties[property.id]">Empty</option>
+                    @for (option of property.options ?? []; track option.id) {
+                      <option [value]="option.id" [selected]="row.properties[property.id] === option.id">{{ option.name }}</option>
+                    }
+                  </select>
+                }
+                @case ('multi_select') {
+                  <fieldset class="picker editor-panel" tabindex="-1" (keydown.escape)="cancelEditing($event)">
+                    <legend>{{ property.name }}</legend>
+                    @for (option of property.options ?? []; track option.id; let first = $first) {
+                      <label>
+                        <input type="checkbox" [class.editor]="first" [checked]="chips(row, property).includes(option)" (change)="toggleIn(row, property, option.id, $any($event.target).checked)" />
+                        {{ option.name }}
+                      </label>
+                    } @empty {
+                      <p class="hint">No options yet. Add them from the column's menu.</p>
+                    }
+                    <button type="button" class="done" (click)="cancelEditing($event)">Done</button>
+                  </fieldset>
+                }
+                @case ('person') {
+                  <fieldset class="picker editor-panel" tabindex="-1" (keydown.escape)="cancelEditing($event)">
+                    <legend>{{ property.name }}</legend>
+                    @for (member of store.members(); track member.user_id; let first = $first) {
+                      <label>
+                        <input type="checkbox" [class.editor]="first" [checked]="people(row, property).includes(member.user_id)" (change)="toggleIn(row, property, member.user_id, $any($event.target).checked)" />
+                        {{ member.email }}
+                      </label>
+                    }
+                    <button type="button" class="done" (click)="cancelEditing($event)">Done</button>
+                  </fieldset>
+                }
+                @default {
+                  <input
+                    #textField
+                    class="editor"
+                    [type]="property.type === 'number' ? 'text' : property.type === 'url' ? 'url' : 'text'"
+                    [attr.inputmode]="property.type === 'number' ? 'decimal' : null"
+                    [attr.aria-label]="property.name"
+                    [attr.aria-invalid]="cellError() ? true : null"
+                    [attr.aria-describedby]="cellError() ? 'cell-error' : null"
+                    [value]="draft(row, property)"
+                    (keydown)="editorKeydown($event, row, property, textField)"
+                    (blur)="blurText(row, property, textField, r, c)"
+                  />
+                  @if (cellError(); as message) {
+                    <span id="cell-error" class="cell-error" role="alert">{{ message }}</span>
+                  }
+                }
+              }
+            } @else {
+              @switch (property.type) {
+                @case ('title') {
+                  <span class="value title" [class.untitled]="!row.title">{{ row.title || 'Untitled' }}</span>
+                }
+                @case ('checkbox') {
+                  <input
+                    type="checkbox"
+                    tabindex="-1"
+                    [attr.aria-label]="property.name"
+                    [checked]="checked(row, property)"
+                    [disabled]="readOnly()"
+                    (click)="$event.stopPropagation(); toggle(r, c)"
+                  />
+                }
+                @case ('number') {
+                  <span class="value number">{{ numberText(row, property) }}</span>
+                }
+                @case ('date') {
+                  <span class="value">{{ dateText(row, property) }}</span>
+                }
+                @case ('url') {
+                  @if (link(row, property); as href) {
+                    <a class="value link" [href]="href" target="_blank" rel="noopener noreferrer" tabindex="-1">{{ href }}</a>
+                  }
+                }
+                @case ('person') {
+                  <span class="value">{{ text(row, property) }}</span>
+                }
+                @case ('text') {
+                  <span class="value">{{ text(row, property) }}</span>
+                }
+                @default {
+                  <span class="chips">
+                    @for (option of chips(row, property); track option.id) {
+                      <span class="chip" [attr.data-color]="option.color">{{ option.name }}</span>
+                    }
+                  </span>
+                }
+              }
+            }
+          </div>
+        }
+      </div>
+    </cdk-virtual-scroll-viewport>
+  </div>
+
+  @if (!readOnly()) {
+    <button type="button" class="new-row" (click)="addRow()">
+      <span aria-hidden="true">+</span> New
+    </button>
+  }
+  @if (store.loadingMore()) {
+    <p class="more" role="status">Loading more rows…</p>
+  }
+</div>

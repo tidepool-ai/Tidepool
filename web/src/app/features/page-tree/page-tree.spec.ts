@@ -177,6 +177,31 @@ describe('PageTree', () => {
       expect(document.activeElement).toBe(link('Roadmap'));
     });
 
+    it('creates a database, shown with a table icon and no subpages', async () => {
+      await render();
+      button('Add a database').click();
+      const request = http.expectOne('/api/databases');
+      expect([request.request.method, request.request.body]).toEqual(['POST', { workspace_id: WORKSPACE, parent_id: null }]);
+      request.flush({ id: 'db1', page_id: 'tasks', title: '', archived_at: null, properties: [], views: [] });
+      await stable();
+      expect(document.activeElement).toBe(titleInput()); // named right away, like a page
+      expect(tree.querySelector('[role="status"]')!.textContent).toContain('Database created');
+      await type('Tasks', 'Enter');
+      http.expectOne('/api/pages/tasks').flush({ ...apiPage('tasks', 'Tasks'), is_database: true });
+      await stable();
+
+      const item = link('Tasks').closest('.row')!;
+      expect(item.querySelector('.database-icon')).toBeTruthy();
+      expect(item.querySelector('[aria-label="Expand Tasks"]')).toBeNull();
+      expect(item.querySelector('[aria-label="Add a page inside Tasks"]')).toBeNull();
+      expect(link('Docs').closest('.row')!.querySelector('[aria-label="Add a page inside Docs"]')).toBeTruthy();
+    });
+
+    it('shows databases loaded with the tree as databases', async () => {
+      await render([{ ...apiPage('tasks', 'Tasks'), is_database: true }]);
+      expect(link('Tasks').closest('.row')!.querySelector('.database-icon')).toBeTruthy();
+    });
+
     it('creates a subpage and expands its parent to show it', async () => {
       await render();
       button('Add a page inside Docs').click();

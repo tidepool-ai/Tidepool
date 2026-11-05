@@ -22,9 +22,12 @@ import { ImageUploadService, ImageUploader } from '../../core/files/image-upload
 import { AuthService } from '../../core/auth/auth.service';
 import { COLLAB_CONNECTOR, CollabConnection } from '../../core/collab/collab-connection';
 import { Presence } from './presence/presence';
+import { DatabaseView } from '../database/database-view';
 
 interface PageDetail extends ApiPage {
   archived_at: string | null;
+  /** A database's page shows its table instead of the editor (T17). */
+  is_database?: boolean;
 }
 
 /** Content saved as JSON before live editing (T09); copied into the live document once. */
@@ -47,7 +50,7 @@ const CLOSED_MESSAGES: Record<string, string> = {
 @Component({
   selector: 'app-page-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EditorComponent, Presence],
+  imports: [EditorComponent, Presence, DatabaseView],
   styleUrl: './page.page.scss',
   templateUrl: './page.page.html',
   host: { '(window:beforeunload)': 'warnIfUnsaved($event)' },
@@ -79,6 +82,16 @@ export class PagePage {
   protected readonly uploadImage: ImageUploader = (file, onProgress) =>
     this.images.upload(this.pageId(), file, onProgress);
 
+  /** The page to edit live: this page once loaded, unless it's a database (whose rows are the content). */
+  private readonly livePage = computed(() => {
+    const page = this.page.hasValue() ? this.page.value() : undefined;
+    return page?.id === this.pageId() && !page.is_database ? page.id : null;
+  });
+  protected readonly isDatabase = computed(() => {
+    const page = this.page.hasValue() ? this.page.value() : undefined;
+    return page?.id === this.pageId() && !!page.is_database;
+  });
+
   /** This page's live document connection (one per page). */
   readonly connection = signal<CollabConnection | null>(null);
   protected readonly view = signal<View | null>(null);
@@ -105,7 +118,14 @@ export class PagePage {
   constructor() {
     // One connection per page.
     effect((onCleanup) => {
-      const pageId = this.pageId();
+      const pageId = this.livePage();
+      if (!pageId) {
+        untracked(() => {
+          this.view.set(null);
+          this.connection.set(null);
+        });
+        return;
+      }
       // Only the page id is a dependency: connecting reads and writes other signals.
       const connection = untracked(() => {
         const opened = this.connect(pageId);
