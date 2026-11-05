@@ -100,12 +100,12 @@ describe('EditorComponent', () => {
     expect(doc(editor).content!.map((node) => node.type)).toEqual(['heading', 'paragraph']);
   });
 
-  it('does not offer H4 or the blocks that come later (quote, code block, divider)', async () => {
+  it('does not offer H4, and has the FR-3 blocks built so far', async () => {
     await render();
     type(editor, '#### x');
     expect(blocks(editor)).toEqual(['paragraph']);
-    for (const name of ['blockquote', 'codeBlock', 'horizontalRule']) {
-      expect(editor.schema.nodes[name]).toBeUndefined();
+    for (const name of ['blockquote', 'codeBlock', 'horizontalRule', 'taskList', 'taskItem', 'details', 'callout']) {
+      expect(editor.schema.nodes[name], name).toBeDefined();
     }
   });
 

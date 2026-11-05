@@ -77,6 +77,11 @@ describe('theme contrast (DESIGN-SYSTEM.md 5.7)', () => {
       expect(contrastRatio(onRail, tokens['rail'])).toBeGreaterThanOrEqual(3);
     });
 
+    // Syntax highlighting in code blocks (editor.scss) draws these on --color-bg.
+    it.each(['text', 'muted', 'primary', 'accent', 'ai', 'soft-text'])('code color %s on bg is at least 4.5:1', (token) => {
+      expect(contrastRatio(tokens[token], tokens['bg'])).toBeGreaterThanOrEqual(4.5);
+    });
+
     it.each(PAIRS)('%s on %s is at least %s:1', (foreground, background, minimum) => {
       expect(contrastRatio(tokens[foreground], tokens[background])).toBeGreaterThanOrEqual(minimum);
     });

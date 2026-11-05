@@ -68,7 +68,8 @@ describe('slash menu', () => {
         'Embeds',
       ]);
       expect(selectedTab()).toBe('All');
-      expect(optionTitles()).toEqual(['Text', 'Heading 1', 'Heading 2', 'Heading 3', 'Bulleted list', 'Numbered list']);
+      expect(optionTitles().slice(0, 6)).toEqual(['Text', 'Heading 1', 'Heading 2', 'Heading 3', 'Bulleted list', 'Numbered list']);
+      expect(optionTitles()).toHaveLength(12);
       expect(active()?.textContent).toContain('Text');
     });
 
@@ -120,7 +121,7 @@ describe('slash menu', () => {
       expect(active()?.textContent).toContain('Heading 1');
       await key('ArrowUp');
       await key('ArrowUp');
-      expect(active()?.textContent).toContain('Numbered list');
+      expect(active()?.textContent).toContain('Code');
       await key('ArrowDown');
       expect(active()?.textContent).toContain('Text');
     });
@@ -204,7 +205,7 @@ describe('slash menu', () => {
         await typeAndRender('/');
         await key('ArrowUp'); // wraps to the last option
         expect(scrolled.at(-1)).toBe(active()!.id);
-        expect(active()!.textContent).toContain('Numbered list');
+        expect(active()!.textContent).toContain('Code');
       } finally {
         Element.prototype.scrollIntoView = original;
       }

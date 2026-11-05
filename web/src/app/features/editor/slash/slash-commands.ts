@@ -29,21 +29,25 @@ function setBlock(type: 'paragraph' | 'heading', attrs?: Record<string, unknown>
   };
 }
 
-function list(type: 'bulletList' | 'orderedList') {
+function list(type: 'bulletList' | 'orderedList' | 'taskList') {
   return (editor: Editor, range: Range) => {
     const chain = editor.chain().focus().deleteRange(range);
     // toggle* would lift the block out if it's already that kind of list.
-    if (editor.isActive(type)) {
-      chain.run();
-    } else if (type === 'bulletList') {
-      chain.toggleBulletList().run();
-    } else {
-      chain.toggleOrderedList().run();
-    }
+    if (editor.isActive(type)) chain.run();
+    else if (type === 'bulletList') chain.toggleBulletList().run();
+    else if (type === 'orderedList') chain.toggleOrderedList().run();
+    else chain.toggleTaskList().run();
   };
 }
 
-/** Blocks available today. AI (T24) and embeds (T13) add to their tabs later. */
+/** Run a block command on the current line after removing the "/query" text. */
+function block(apply: (chain: ReturnType<Editor['chain']>) => ReturnType<Editor['chain']>) {
+  return (editor: Editor, range: Range) => {
+    apply(editor.chain().focus().deleteRange(range)).run();
+  };
+}
+
+/** Blocks available today (FR-3). AI (T24) and embeds (T13) add to their tabs later. */
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
   { id: 'text', title: 'Text', description: 'Plain paragraph', keywords: ['paragraph', 'plain', 'p'], group: 'blocks', icon: 'T', run: setBlock('paragraph') },
   { id: 'h1', title: 'Heading 1', description: 'Big section heading', keywords: ['h1', 'title', '#', 'large'], group: 'blocks', icon: 'H1', run: setBlock('heading', { level: 1 }) },
@@ -51,6 +55,12 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
   { id: 'h3', title: 'Heading 3', description: 'Small section heading', keywords: ['h3', '###'], group: 'blocks', icon: 'H3', run: setBlock('heading', { level: 3 }) },
   { id: 'bullet', title: 'Bulleted list', description: 'A simple list', keywords: ['ul', 'unordered', 'bullet', 'list', '-'], group: 'blocks', icon: '•', run: list('bulletList') },
   { id: 'numbered', title: 'Numbered list', description: 'A list with numbers', keywords: ['ol', 'ordered', 'number', 'list', '1.'], group: 'blocks', icon: '1.', run: list('orderedList') },
+  { id: 'todo', title: 'To-do list', description: 'Track tasks with checkboxes', keywords: ['todo', 'task', 'checkbox', 'check', '[]'], group: 'blocks', icon: '☐', run: list('taskList') },
+  { id: 'toggle', title: 'Toggle', description: 'Hide content you can expand', keywords: ['details', 'collapse', 'fold', 'expand'], group: 'blocks', icon: '▸', run: block((chain) => chain.setDetails()) },
+  { id: 'quote', title: 'Quote', description: 'Capture a quotation', keywords: ['blockquote', 'citation', '>'], group: 'blocks', icon: '“', run: block((chain) => chain.setBlockquote()) },
+  { id: 'callout', title: 'Callout', description: 'Make a note stand out', keywords: ['note', 'info', 'tip', 'highlight', 'aside'], group: 'blocks', icon: '💡', run: block((chain) => chain.setCallout()) },
+  { id: 'divider', title: 'Divider', description: 'A line between sections', keywords: ['hr', 'line', 'separator', 'rule', '---'], group: 'blocks', icon: '—', run: block((chain) => chain.setHorizontalRule()) },
+  { id: 'code', title: 'Code', description: 'Code with syntax highlighting', keywords: ['code block', 'snippet', 'pre', '```'], group: 'blocks', icon: '</>', run: block((chain) => chain.setCodeBlock()) },
 ];
 
 /**
