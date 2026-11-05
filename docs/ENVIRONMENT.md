@@ -24,6 +24,9 @@ on your own machine or exist for one CI run.
 | `S3_ENDPOINT_URL` | No | Not on AWS | *(empty)* | For MinIO or the local dev storage, e.g. `http://127.0.0.1:9000`. Empty means AWS. |
 | `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `S3_SECRET_ACCESS_KEY` **yes** | For images | *(empty)* | Key that may put and get objects under `pages/` in the bucket. |
 | `MAX_UPLOAD_BYTES` | No | No | `26214400` (25 MB) | Largest image accepted; the bucket enforces it too. |
+| `REDIS_URL` | Yes if it has a password | With 2+ API workers | *(empty: one worker)* | Redis that API workers use to share live edits. Not needed for a single worker. |
+| `REALTIME_SAVE_DELAY_SECONDS` | No | No | `2` | Live documents are saved this long after the last edit (and at least every 10 s while editing). |
+| `MAX_REALTIME_MESSAGE_BYTES` | No | No | `1000000` | Largest WebSocket message accepted; bigger ones close the socket. |
 | `TEST_DATABASE_URL` | Yes if set | No | `DATABASE_URL` + `_test` | Test database. It is **dropped and recreated** on every test run; its name must end in `_test`. |
 | `GLM_BASE_URL`, `GLM_API_KEY`, `GLM_MODEL` | `GLM_API_KEY` **yes** | From T23 | *(empty)* | Hosted GLM model for AI features. The key stays on the server. |
 

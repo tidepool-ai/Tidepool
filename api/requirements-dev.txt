@@ -4,3 +4,5 @@ httpx2
 ruff>=0.6
 # S3 emulator for the file upload tests and `python -m scripts.dev_storage`
 moto[server]>=5.0
+# In-memory Redis for the realtime fan-out tests
+fakeredis>=2.26
