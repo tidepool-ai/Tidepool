@@ -5,9 +5,9 @@ A free test deployment: **Neon** (Postgres) → **Render** (API) → **Vercel** 
 The web app forwards `/api/*` to the API (`web/vercel.json`), so the browser sees one site. That
 keeps the `SameSite=Strict` refresh cookie working and avoids CORS setup.
 
-> **Test deploys only, for now.** There is no email sender yet, so sign-in links are written to
-> the API logs (`LOG_MAGIC_LINKS=true`). Anyone who can read the Render logs can sign in as any
-> user. Turn it off (and add an email sender) before inviting other people.
+> **Before inviting anyone, set up email (step 5).** Until then sign-in links are written to the
+> API logs (`LOG_MAGIC_LINKS=true`), and anyone who can read the Render logs can sign in as any
+> user. Once `RESEND_API_KEY` is set, links are emailed and never logged.
 
 ## 1. Database: Neon
 
@@ -51,6 +51,29 @@ about a minute, and may time out once. Try again.
 2. In Render, open the service's **Logs** and find `Magic link for you@example.com: https://…`.
 3. Open that link in the same browser. You land on Home with the page tree.
 
+If the free Render service was asleep, the app shows "Waking up the server" and waits (up to about
+90 seconds) before signing in; nothing needs retrying by hand.
+
+## 5. Email: Resend
+
+1. Sign up at [resend.com](https://resend.com) and create an **API key** (permission: Sending
+   access).
+2. On Render, add `RESEND_API_KEY` with that key. Saving restarts the service.
+3. Request a sign-in link again: it now arrives by email, and the logs only say
+   `Sign-in email sent to …`.
+
+Without a domain of your own, Resend's test sender (`onboarding@resend.dev`, the default) only
+delivers to **the email address of your Resend account**. To sign in other people:
+
+1. In Resend, **Domains → Add domain**, and add the DNS records it shows at your domain's DNS
+   provider. Wait until the domain shows as verified.
+2. On Render, set `EMAIL_FROM` to an address on it, for example `Tidepool <login@yourdomain.com>`.
+3. Set `LOG_MAGIC_LINKS` to `false` (with a key set it no longer has an effect, but this keeps it
+   off if the key is ever removed).
+
+If an email doesn't arrive, Render's logs show `Sign-in email to … failed:` with Resend's reason
+(unverified domain, wrong key, …).
+
 ## Settings reference
 
 All variables, with local setup and what to do if one leaks: [ENVIRONMENT.md](ENVIRONMENT.md).
@@ -64,4 +87,6 @@ All variables, with local setup and what to do if one leaks: [ENVIRONMENT.md](EN
 | `CORS_ORIGINS` | Render | Vercel URL |
 | `REFRESH_COOKIE_SECURE` | Render | `true` |
 | `LOG_MAGIC_LINKS` | Render | `true` for a private test deploy only |
+| `RESEND_API_KEY` | Render | Resend API key; links are emailed once it's set |
+| `EMAIL_FROM` | Render | Sender on a domain verified in Resend (default: Resend's test sender) |
 | `PYTHON_VERSION` | Render | Set by `render.yaml` |

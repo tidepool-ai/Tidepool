@@ -1,6 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { ServerUnavailableError, ServerWake } from '../server-wake';
 
 export interface AuthUser {
   id: string;
@@ -20,6 +21,7 @@ interface TokenResponse {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
+  private readonly wake = inject(ServerWake);
   private readonly token = signal<string | null>(null);
   private readonly currentUser = signal<AuthUser | null>(null);
   private refreshing: Promise<boolean> | null = null;
@@ -33,12 +35,16 @@ export class AuthService {
     return this.token();
   }
 
+  /** Throws ServerUnavailableError if the server never wakes up. */
   async requestLink(email: string): Promise<void> {
+    if (!this.wake.isAwake()) await this.awake();
     await firstValueFrom(this.http.post('/api/auth/magic-link', { email }));
   }
 
   /** Exchange the token from a magic link for a session. Throws if the link is invalid or expired. */
   async verify(linkToken: string): Promise<void> {
+    // A link works once, so don't risk sending it to a server that's still starting.
+    if (!this.wake.isAwake()) await this.awake();
     const response = await firstValueFrom(
       this.http.post<TokenResponse>('/api/auth/verify', { token: linkToken }),
     );
@@ -57,7 +63,11 @@ export class AuthService {
   async ensureSession(): Promise<boolean> {
     if (this.currentUser()) return true;
     if (this.knownSignedOut) return false;
-    if (!this.token() && !(await this.refresh())) return false;
+    // Rotating the refresh token twice would sign the user out, so wake the server first.
+    if (!this.token()) {
+      if (!this.wake.isAwake() && !(await this.wake.ready())) return false;
+      if (!(await this.refresh())) return false;
+    }
     try {
       await this.loadUser();
       return true;
@@ -76,6 +86,10 @@ export class AuthService {
       this.clear();
       this.knownSignedOut = true;
     }
+  }
+
+  private async awake(): Promise<void> {
+    if (!(await this.wake.ready())) throw new ServerUnavailableError();
   }
 
   private async requestRefresh(): Promise<boolean> {

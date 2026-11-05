@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { USER, settle, signIn } from '../../../testing/auth-testing';
+import { USER, settle, signIn, provideAwakeServer } from '../../../testing/auth-testing';
 import { routes } from '../../app.routes';
 import { AuthService } from '../../core/auth/auth.service';
 
@@ -14,7 +14,7 @@ describe('Shell', () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter(routes, withComponentInputBinding()), provideHttpClient(), provideHttpClientTesting(), provideAwakeServer()],
     });
     http = TestBed.inject(HttpTestingController);
     await signIn(TestBed.inject(AuthService), http);

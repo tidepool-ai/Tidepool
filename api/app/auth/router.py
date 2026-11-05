@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -56,10 +56,13 @@ def _token_response(user_id: uuid.UUID) -> TokenResponse:
 
 
 @router.post("/magic-link", status_code=status.HTTP_202_ACCEPTED)
-async def request_magic_link(body: MagicLinkRequest, session: Session) -> dict[str, str]:
-    # Same answer whether or not the email has an account, so emails can't be probed.
+async def request_magic_link(
+    body: MagicLinkRequest, session: Session, background: BackgroundTasks
+) -> dict[str, str]:
+    # Same answer, and about the same time, whether or not the email has an account or the send works:
+    # the email goes out after the response.
     url = await service.create_magic_link(session, body.email)
-    service.deliver_magic_link(body.email, url)
+    background.add_task(service.deliver_magic_link, body.email, url)
     return {"detail": "If the address is valid, a sign-in link is on its way."}
 
 

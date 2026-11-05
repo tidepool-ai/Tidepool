@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { settle } from '../../../testing/auth-testing';
+import { settle, provideAwakeServer } from '../../../testing/auth-testing';
 import { LoginPage } from './login.page';
 
 describe('LoginPage', () => {
@@ -9,7 +9,7 @@ describe('LoginPage', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), provideAwakeServer()] });
     http = TestBed.inject(HttpTestingController);
   });
 
@@ -62,5 +62,18 @@ describe('LoginPage', () => {
     const alert = element.querySelector('[role="alert"]');
     expect(alert?.textContent).toContain("couldn't send");
     expect(input.getAttribute('aria-describedby')).toBe(alert?.id);
+  });
+
+  it.each([
+    [422, "That email address doesn't look right"],
+    [504, "The server isn't responding"],
+    [500, "We couldn't send the link"],
+  ])('explains a %s answer', async (status, message) => {
+    const { fixture, element, submit } = await render();
+    await submit('ada@example.com');
+    http.expectOne('/api/auth/magic-link').flush(null, { status, statusText: 'Error' });
+    await settle();
+    await fixture.whenStable();
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain(message);
   });
 });

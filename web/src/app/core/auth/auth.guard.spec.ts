@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { USER, rejectRefresh, settle, signIn, tokenResponse } from '../../../testing/auth-testing';
+import { USER, rejectRefresh, settle, signIn, tokenResponse, provideAwakeServer } from '../../../testing/auth-testing';
 import { routes } from '../../app.routes';
 import { AuthService } from './auth.service';
 import { safeReturnUrl } from './auth.guard';
@@ -17,7 +17,7 @@ describe('auth guards and routes', () => {
       providers: [
         provideRouter(routes, withComponentInputBinding()),
         provideHttpClient(),
-        provideHttpClientTesting(),
+        provideHttpClientTesting(), provideAwakeServer(),
       ],
     });
     http = TestBed.inject(HttpTestingController);

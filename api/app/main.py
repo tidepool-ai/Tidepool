@@ -46,6 +46,8 @@ def create_app() -> FastAPI:
     app.include_router(workspaces_router)
     app.include_router(pages_router)
 
+    # Also under /api so the web app can reach it through its /api forwarding (and wake a sleeping host).
+    @app.get("/api/health", tags=["system"])
     @app.get("/health", tags=["system"])
     async def health(session: Annotated[AsyncSession, Depends(get_session)]) -> JSONResponse:
         try:

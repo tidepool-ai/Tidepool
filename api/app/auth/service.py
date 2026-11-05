@@ -1,6 +1,7 @@
 """Token issuing and validation for magic-link sign-in."""
 
 import hashlib
+import html
 import logging
 import secrets
 import uuid
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.models import MagicLink, RefreshToken, User
 from app.config import settings
+from app.email.sender import Email, EmailError, email_configured, send_email
 from app.workspaces.service import create_personal_workspace
 
 logger = logging.getLogger(__name__)
@@ -56,12 +58,41 @@ async def create_magic_link(session: AsyncSession, email: str) -> str:
     return f"{settings.app_url}/auth/verify?{urlencode({'token': token})}"
 
 
-def deliver_magic_link(email: str, url: str) -> None:
-    # No email sender yet (MVP): the link can only go to the logs (see LOG_MAGIC_LINKS).
-    if settings.log_magic_links:
-        logger.info("Magic link for %s: %s", normalize_email(email), url)
+def magic_link_email(email: str, url: str) -> Email:
+    minutes = settings.magic_link_minutes
+    text = (
+        f"Sign in to Tidepool:\n\n{url}\n\n"
+        f"The link works once and expires in {minutes} minutes.\n"
+        "If you didn't ask to sign in, you can ignore this email."
+    )
+    link = html.escape(url, quote=True)
+    body = (
+        "<p>Sign in to Tidepool:</p>"
+        f'<p><a href="{link}">Sign in</a></p>'
+        f"<p>The link works once and expires in {minutes} minutes.</p>"
+        "<p>If you didn't ask to sign in, you can ignore this email.</p>"
+    )
+    return Email(to=email, subject="Your Tidepool sign-in link", text=text, html=body)
+
+
+async def deliver_magic_link(email: str, url: str) -> None:
+    """Email the link if a provider is configured; otherwise log it when allowed (dev and test deploys).
+
+    Runs after the response is sent, so failures are logged rather than shown to the requester, who
+    gets the same answer either way.
+    """
+    address = normalize_email(email)
+    if email_configured():
+        try:
+            await send_email(magic_link_email(address, url))
+        except EmailError as exc:
+            logger.error("Sign-in email to %s failed: %s", address, exc)
+        else:
+            logger.info("Sign-in email sent to %s", address)
+    elif settings.log_magic_links:
+        logger.info("Magic link for %s: %s", address, url)
     else:
-        logger.warning("Email delivery is not configured; magic link for %s was not sent", email)
+        logger.warning("Email delivery is not configured; magic link for %s was not sent", address)
 
 
 async def consume_magic_link(session: AsyncSession, token: str) -> User:

@@ -15,7 +15,9 @@ on your own machine or exist for one CI run.
 | `APP_URL` | No | In deploys | `http://localhost:4200` | Web app URL, used to build sign-in links. No trailing slash. |
 | `CORS_ORIGINS` | No | In deploys | `http://localhost:4200` | Comma-separated web app origins. |
 | `REFRESH_COOKIE_SECURE` | No | No | `true` | Set `false` only for plain-http local dev. |
-| `LOG_MAGIC_LINKS` | No, but see note | No | on in development | Writes sign-in links to the logs. Anyone who can read the logs can then sign in as anyone: private test deploys only. |
+| `LOG_MAGIC_LINKS` | No, but see note | No | on in development | Without `RESEND_API_KEY`, writes sign-in links to the logs. Anyone who can read the logs can then sign in as anyone: private test deploys only. |
+| `RESEND_API_KEY` | **Yes** | For real users | *(empty)* | Sends sign-in emails through Resend. With it set, links are never logged. |
+| `EMAIL_FROM` | No | With your own domain | `Tidepool <onboarding@resend.dev>` | Sender address. Resend's test sender only delivers to your Resend account's email. |
 | `MAX_PAGE_CONTENT_BYTES` | No | No | `1000000` | Largest page document accepted, in bytes of JSON; bigger saves get `413`. |
 | `TEST_DATABASE_URL` | Yes if set | No | `DATABASE_URL` + `_test` | Test database. It is **dropped and recreated** on every test run; its name must end in `_test`. |
 | `GLM_BASE_URL`, `GLM_API_KEY`, `GLM_MODEL` | `GLM_API_KEY` **yes** | From T23 | *(empty)* | Hosted GLM model for AI features. The key stays on the server. |
@@ -77,4 +79,5 @@ into the workflow file.
 | Neon connection string | Neon → **Roles** → reset the role's password, copy the new string, update `DATABASE_URL` on Render. |
 | `JWT_SECRET` | Render → Environment → generate a new value. Everyone is signed out; nothing else breaks. |
 | `GLM_API_KEY` | Revoke it with the provider, create a new one, update Render. |
+| `RESEND_API_KEY` | Resend → **API Keys** → delete it, create a new one, update Render. |
 | Anything committed to git | Rotate it as above first. Deleting the commit is not enough once the repo is public. |

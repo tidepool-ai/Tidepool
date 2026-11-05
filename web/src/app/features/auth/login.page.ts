@@ -1,8 +1,20 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { rememberReturnUrl } from '../../core/auth/return-url';
+import { ServerUnavailableError } from '../../core/server-wake';
 
 type Status = 'idle' | 'sending' | 'sent' | 'error';
+
+export function loginErrorMessage(error: unknown): string {
+  if (error instanceof HttpErrorResponse && error.status === 422) {
+    return "That email address doesn't look right. Check it and try again.";
+  }
+  if (error instanceof ServerUnavailableError || (error instanceof HttpErrorResponse && [0, 502, 503, 504].includes(error.status))) {
+    return "The server isn't responding. Try again in a minute.";
+  }
+  return "We couldn't send the link. Try again in a moment.";
+}
 
 @Component({
   selector: 'app-login-page',
@@ -32,11 +44,12 @@ type Status = 'idle' | 'sending' | 'sent' | 'error';
               [attr.aria-describedby]="status() === 'error' ? 'login-error' : null"
             />
             @if (status() === 'error') {
-              <p id="login-error" class="error" role="alert">We couldn't send the link. Try again in a moment.</p>
+              <p id="login-error" class="error" role="alert">{{ errorMessage() }}</p>
             }
             <button type="submit" class="primary" [disabled]="status() === 'sending'">
               {{ status() === 'sending' ? 'Sending…' : 'Send sign-in link' }}
             </button>
+
           </form>
         }
       </section>
@@ -50,6 +63,7 @@ export class LoginPage {
   readonly returnUrl = input<string>();
   protected readonly email = signal('');
   protected readonly status = signal<Status>('idle');
+  protected readonly errorMessage = signal('');
 
   protected async send(event: Event): Promise<void> {
     event.preventDefault();
@@ -60,7 +74,8 @@ export class LoginPage {
       rememberReturnUrl(this.returnUrl() ?? null);
       await this.auth.requestLink(email);
       this.status.set('sent');
-    } catch {
+    } catch (error) {
+      this.errorMessage.set(loginErrorMessage(error));
       this.status.set('error');
     }
   }
