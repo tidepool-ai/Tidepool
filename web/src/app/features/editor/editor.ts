@@ -14,6 +14,7 @@ import {
 import { Editor, Extensions, JSONContent } from '@tiptap/core';
 import { Placeholder } from '@tiptap/extensions';
 import StarterKit from '@tiptap/starter-kit';
+import { blockExtensions } from './blocks';
 import { SlashMenuView } from './slash/slash-menu';
 import { SlashMenuController } from './slash/slash-menu.controller';
 import { SlashMenu, exitSuggestion, slashMenuKey } from './slash/slash-menu.extension';
@@ -22,20 +23,20 @@ import { SlashMenu, exitSuggestion, slashMenuKey } from './slash/slash-menu.exte
 export const EMPTY_DOC: JSONContent = { type: 'doc', content: [{ type: 'paragraph' }] };
 
 /**
- * T08 blocks: paragraphs, H1–H3, bulleted and numbered lists, inline marks, undo/redo.
- * Markdown shortcuts come with StarterKit ("# ", "## ", "### ", "- ", "1. ").
- * Quote, code block and divider arrive with T11; links later.
+ * Blocks: paragraph, H1–H3, bulleted/numbered/to-do lists, quote, divider, toggle, callout and code
+ * (T08, T11). Markdown shortcuts (FR-5): "# ", "## ", "### ", "- ", "1. ", "[] ", "> ", "``` ", "---",
+ * **bold**, *italic*, `code`. Links come later.
  */
 export function editorExtensions(placeholder: string, slash: SlashMenuController | null = null): Extensions {
   return [
     SlashMenu.configure({ controller: slash }),
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
-      blockquote: false,
+      // Replaced by the highlighted code block in ./blocks.
       codeBlock: false,
-      horizontalRule: false,
       link: false,
     }),
+    ...blockExtensions(),
     Placeholder.configure({ placeholder }),
   ];
 }

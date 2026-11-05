@@ -29,7 +29,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: reload restores content; API tests cover permissions and size limit.
 - [x] **T10 Slash menu (web)**: `/` opens the menu (All, Blocks, AI, Embeds tabs), filters as you type, Up/Down/Enter/Esc, inserts the block.
   - Done when: tests cover filtering and keyboard selection.
-- [ ] **T11 More blocks (web)**: To-do, toggle, quote, callout, divider, code (with language + highlighting); Markdown shortcuts per FR-5.
+- [x] **T11 More blocks (web)**: To-do, toggle, quote, callout, divider, code (with language + highlighting); Markdown shortcuts per FR-5.
   - Done when: each shortcut has a test.
 - [ ] **T12 Block handle (web)**: Hover handle with drag-to-reorder and block menu (turn into, duplicate, delete, copy link).
   - Done when: reorder persists; menu actions tested.

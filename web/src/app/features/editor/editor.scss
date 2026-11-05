@@ -69,3 +69,211 @@
   color: var(--color-muted);
   pointer-events: none;
 }
+
+// T11 blocks.
+.tp-editor blockquote {
+  margin: 0;
+  padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--color-text);
+}
+
+.tp-editor hr {
+  height: 1px;
+  margin: 16px 0;
+  border: 0;
+  background: var(--color-border);
+}
+
+.tp-editor hr.ProseMirror-selectednode {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+}
+
+// To-do list: checkbox in front of the item's text.
+.tp-editor ul[data-type='taskList'] {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.tp-editor ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.tp-editor ul[data-type='taskList'] li > label {
+  flex: 0 0 auto;
+  margin-top: 0.3em;
+}
+
+.tp-editor ul[data-type='taskList'] li > label input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.tp-editor ul[data-type='taskList'] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tp-editor ul[data-type='taskList'] li[data-checked='true'] > div {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+
+// Toggle (Details): a button, then the summary; content shows when open.
+.tp-editor [data-type='details'] {
+  display: flex;
+  gap: 4px;
+}
+
+.tp-editor [data-type='details'] > button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 0.1em;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.tp-editor [data-type='details'] > button::before {
+  content: '▸';
+  transition: transform 150ms ease;
+}
+
+.tp-editor [data-type='details'].is-open > button::before {
+  transform: rotate(90deg);
+}
+
+.tp-editor [data-type='details'] > button:hover {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
+
+.tp-editor [data-type='details'] > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tp-editor [data-type='details'] summary {
+  display: block;
+  list-style: none;
+  font-weight: 600;
+}
+
+.tp-editor [data-type='detailsContent'][hidden] {
+  display: none;
+}
+
+// Callout.
+.tp-editor .tp-callout {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.tp-editor .tp-callout-emoji {
+  flex: 0 0 auto;
+  user-select: none;
+}
+
+.tp-editor .tp-callout-body {
+  flex: 1;
+  min-width: 0;
+}
+
+// Code block: language picker, then highlighted code on the page background.
+.tp-editor .tp-code {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.tp-editor .tp-code-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px 6px 0;
+}
+
+.tp-editor .tp-code-language {
+  min-height: 32px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tp-editor .tp-code-language:hover {
+  border-color: var(--color-border);
+}
+
+.tp-editor .tp-code pre {
+  margin: 0;
+  padding: 4px 16px 14px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.6;
+  tab-size: 2;
+}
+
+.tp-editor .tp-code pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+// Syntax colors use theme tokens only; theme-contrast.spec.ts checks each on --color-bg.
+.tp-editor .hljs-keyword,
+.tp-editor .hljs-selector-tag,
+.tp-editor .hljs-meta .hljs-keyword,
+.tp-editor .hljs-doctag {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.tp-editor .hljs-string,
+.tp-editor .hljs-regexp,
+.tp-editor .hljs-addition,
+.tp-editor .hljs-attr,
+.tp-editor .hljs-template-tag {
+  color: var(--color-accent);
+}
+
+.tp-editor .hljs-number,
+.tp-editor .hljs-literal,
+.tp-editor .hljs-built_in,
+.tp-editor .hljs-type,
+.tp-editor .hljs-symbol {
+  color: var(--color-ai);
+}
+
+.tp-editor .hljs-title,
+.tp-editor .hljs-name,
+.tp-editor .hljs-section,
+.tp-editor .hljs-selector-class,
+.tp-editor .hljs-selector-id {
+  color: var(--color-soft-text);
+}
+
+.tp-editor .hljs-comment,
+.tp-editor .hljs-quote,
+.tp-editor .hljs-deletion,
+.tp-editor .hljs-meta {
+  color: var(--color-muted);
+  font-style: italic;
+}

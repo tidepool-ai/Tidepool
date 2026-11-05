@@ -9,7 +9,20 @@ describe('slash commands', () => {
   });
 
   it('lists every block when nothing is typed', () => {
-    expect(titles('')).toEqual(['Text', 'Heading 1', 'Heading 2', 'Heading 3', 'Bulleted list', 'Numbered list']);
+    expect(titles('')).toEqual([
+      'Text',
+      'Heading 1',
+      'Heading 2',
+      'Heading 3',
+      'Bulleted list',
+      'Numbered list',
+      'To-do list',
+      'Toggle',
+      'Quote',
+      'Callout',
+      'Divider',
+      'Code',
+    ]);
     expect(titles('', 'blocks')).toEqual(titles(''));
   });
 
@@ -25,7 +38,7 @@ describe('slash commands', () => {
     });
 
     it('matches any word in the title', () => {
-      expect(titles('list')).toEqual(['Bulleted list', 'Numbered list']);
+      expect(titles('list')).toEqual(['Bulleted list', 'Numbered list', 'To-do list']);
     });
 
     it('matches keywords people type', () => {
@@ -34,6 +47,12 @@ describe('slash commands', () => {
       expect(titles('ol')).toEqual(['Numbered list']);
       expect(titles('#')).toEqual(['Heading 1', 'Heading 2', 'Heading 3']);
       expect(titles('paragraph')).toEqual(['Text']);
+      expect(titles('todo')).toEqual(['To-do list']);
+      expect(titles('hr')).toEqual(['Divider']);
+      expect(titles('```')).toEqual(['Code']);
+      expect(titles('note')).toEqual(['Callout']);
+      expect(titles('details')).toEqual(['Toggle']);
+      expect(titles('>')).toEqual(['Quote']);
     });
 
     it('ranks title prefixes before word and keyword matches', () => {
