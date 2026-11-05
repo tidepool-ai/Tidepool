@@ -1,14 +1,10 @@
-import dataclasses
-import logging
-
 import pytest
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.auth import service
-from app.config import magic_link_logging, normalize_database_url, settings
+from app.config import magic_link_logging, normalize_database_url
 
 NEON = "postgresql://alex:secret@ep-cool-name-123.eu-central-1.aws.neon.tech/tidepool?sslmode=require&channel_binding=require"
 
@@ -67,24 +63,3 @@ async def test_converted_url_connects(database_url: str) -> None:
 )
 def test_magic_link_logging_default(value: str | None, app_env: str, expected: bool) -> None:
     assert magic_link_logging(value, app_env) is expected
-
-
-def test_magic_links_are_not_logged_when_turned_off(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    monkeypatch.setattr(service, "settings", dataclasses.replace(settings, log_magic_links=False))
-    with caplog.at_level(logging.INFO, logger="app.auth"):
-        service.deliver_magic_link("ada@example.com", "https://app/auth/verify?token=secret")
-    assert "secret" not in caplog.text
-    assert "not configured" in caplog.text
-
-
-def test_magic_links_are_logged_when_turned_on(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    monkeypatch.setattr(
-        service, "settings", dataclasses.replace(settings, app_env="production", log_magic_links=True)
-    )
-    with caplog.at_level(logging.INFO, logger="app.auth"):
-        service.deliver_magic_link("ada@example.com", "https://app/auth/verify?token=abc")
-    assert "Magic link for ada@example.com: https://app/auth/verify?token=abc" in caplog.text

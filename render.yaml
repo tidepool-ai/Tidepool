@@ -25,6 +25,12 @@ services:
         sync: false # same Vercel URL
       - key: REFRESH_COOKIE_SECURE
         value: "true"
-      # No email sender yet: sign-in links go to the Render logs. Test deploys only (see docs/DEPLOY.md).
+      # Sign-in emails via Resend (docs/DEPLOY.md, step 5). Once RESEND_API_KEY is set, links are
+      # emailed and never logged.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false # e.g. "Tidepool <login@yourdomain.com>" on a domain verified in Resend
+      # Until Resend is set up, sign-in links go to the Render logs. Test deploys only.
       - key: LOG_MAGIC_LINKS
         value: "true"
