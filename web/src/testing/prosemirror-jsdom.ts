@@ -10,3 +10,10 @@ export function stubLayoutForProseMirror(): void {
   Element.prototype.getClientRects ??= emptyList;
   document.elementFromPoint ??= () => null;
 }
+
+/** jsdom has no scrolling: CDK scrolls a viewport with `scrollTo`, which here just sets `scrollTop`. */
+export function stubScrolling(): void {
+  Element.prototype.scrollTo ??= function (this: Element, options?: ScrollToOptions | number) {
+    if (typeof options === 'object' && options.top !== undefined) this.scrollTop = options.top;
+  } as Element['scrollTo'];
+}

@@ -7,7 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { settle } from '../../../../testing/auth-testing';
 import { FakeCollabServer } from '../../../../testing/collab-testing';
 import { MEMBERS, PROPERTIES, database, page, row } from '../../../../testing/database-testing';
-import { stubLayoutForProseMirror } from '../../../../testing/prosemirror-jsdom';
+import { stubLayoutForProseMirror, stubScrolling } from '../../../../testing/prosemirror-jsdom';
 import { AuthService } from '../../../core/auth/auth.service';
 import { COLLAB_CONNECTOR } from '../../../core/collab/collab-connection';
 import { Database, Row } from '../database.api';
@@ -79,7 +79,10 @@ describe('Row side peek (T19)', () => {
     return event;
   };
 
-  beforeAll(() => stubLayoutForProseMirror());
+  beforeAll(() => {
+    stubLayoutForProseMirror();
+    stubScrolling();
+  });
 
   beforeEach(() => {
     const collab = new FakeCollabServer();

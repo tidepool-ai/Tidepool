@@ -4,6 +4,7 @@ import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@a
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { settle } from '../../../../testing/auth-testing';
+import { stubScrolling } from '../../../../testing/prosemirror-jsdom';
 import { MEMBERS, PROPERTIES, database, page, row, rows } from '../../../../testing/database-testing';
 import { Database, Property, Row } from '../database.api';
 import { DatabaseView } from '../database-view';
@@ -83,10 +84,7 @@ describe('Table lens (T17)', () => {
   const patch = (rowId: string): TestRequest => http.expectOne(`/api/databases/db1/rows/${rowId}`);
 
   beforeAll(() => {
-    // jsdom has no scrolling: CDK scrolls the viewport with scrollTo, which sets scrollTop here.
-    Element.prototype.scrollTo ??= function (this: Element, options?: ScrollToOptions | number) {
-      if (typeof options === 'object' && options.top !== undefined) this.scrollTop = options.top;
-    } as Element['scrollTo'];
+    stubScrolling();
   });
 
   beforeEach(() => {
