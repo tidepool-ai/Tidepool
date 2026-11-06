@@ -1,0 +1,146 @@
+<div class="backdrop" (click)="closed.emit()"></div>
+<div
+  class="dialog"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="share-title"
+  cdkTrapFocus
+  [cdkTrapFocusAutoCapture]="true"
+>
+  <header>
+    <h2 id="share-title">Share “{{ title() || 'Untitled' }}”</h2>
+    <button type="button" class="icon-button" aria-label="Close" (click)="closed.emit()"><span aria-hidden="true">×</span></button>
+  </header>
+  <p class="visually-hidden" role="status" aria-live="polite">{{ announcement() }}</p>
+  @if (error(); as problem) {
+    <p class="error" role="alert">{{ problem }}</p>
+  }
+
+  @if (loadError()) {
+    <p class="error" role="alert">
+      Couldn't load who has access.
+      <button type="button" class="link-button" (click)="load()">Try again</button>
+    </p>
+  } @else if (permissions(); as shared) {
+    @if (canShare()) {
+      <form class="invite" (submit)="invite($event)">
+        <label class="visually-hidden" for="share-email">Invite by email</label>
+        <input
+          id="share-email"
+          type="email"
+          placeholder="Email or name"
+          autocomplete="off"
+          list="share-members"
+          required
+          [value]="email()"
+          (input)="email.set($any($event.target).value)"
+        />
+        <datalist id="share-members">
+          @for (member of suggestions(); track member.user_id) {
+            <option [value]="member.email"></option>
+          }
+        </datalist>
+        <label class="visually-hidden" for="share-level">Access for the people you invite</label>
+        <select id="share-level" [value]="inviteLevel()" (change)="inviteLevel.set($any($event.target).value)">
+          @for (level of LEVELS; track level.value) {
+            <option [value]="level.value" [selected]="level.value === inviteLevel()">{{ level.label }}</option>
+          }
+        </select>
+        <button type="submit" class="primary" [disabled]="busy() || !email().trim()">Invite</button>
+      </form>
+    } @else {
+      <p class="note">You have {{ levelLabel(shared.access).toLowerCase() }} here. Only people with full access can change who has access.</p>
+    }
+
+    <h3>People with access</h3>
+    <ul class="people">
+      @for (person of shared.people; track person.user_id) {
+        <li>
+          <span class="avatar" aria-hidden="true">{{ initial(person.email) }}</span>
+          <span class="who">
+            <span class="email">{{ person.email }}</span>
+            <span class="detail">
+              @if (person.role === 'guest') {
+                <span class="badge">Guest</span>
+              }
+              @if (person.inherited_from; as from) {
+                From “{{ from.title || 'Untitled' }}”
+              }
+            </span>
+          </span>
+          @if (canShare()) {
+            <select
+              [attr.aria-label]="'Access for ' + person.email"
+              [disabled]="busy()"
+              (change)="setLevel(person, $any($event.target).value)"
+            >
+              @for (level of LEVELS; track level.value) {
+                <option [value]="level.value" [selected]="level.value === person.level">{{ level.label }}</option>
+              }
+              @if (!person.inherited_from) {
+                <option value="remove">Remove</option>
+              }
+            </select>
+          } @else {
+            <span class="level">{{ levelLabel(person.level) }}</span>
+          }
+        </li>
+      } @empty {
+        <li class="empty">Nobody has been invited to this page.</li>
+      }
+    </ul>
+
+    <h3 id="general-label">General access</h3>
+    <div class="general">
+      @if (canShare()) {
+        <select
+          aria-labelledby="general-label"
+          [disabled]="busy()"
+          (change)="setGeneral($any($event.target).value)"
+        >
+          @if (hasParent()) {
+            <option value="inherit" [selected]="generalChoice() === 'inherit'">Same as the page above</option>
+          }
+          <option value="invited" [selected]="generalChoice() === 'invited'">Only people invited</option>
+          <option value="workspace" [selected]="generalChoice() === 'workspace'">Everyone in the workspace</option>
+          <option value="public" [selected]="generalChoice() === 'public'">Anyone with the link</option>
+        </select>
+        @if (shared.general.access !== 'invited') {
+          <select
+            aria-label="Access for workspace members"
+            [disabled]="busy()"
+            (change)="setGeneral(generalChoice() === 'inherit' ? shared.general.access : generalChoice(), $any($event.target).value)"
+          >
+            @for (level of LEVELS; track level.value) {
+              <option [value]="level.value" [selected]="level.value === shared.general.level">{{ level.label }}</option>
+            }
+          </select>
+        }
+      }
+      <p class="note" id="general-note">
+        @switch (shared.general.access) {
+          @case ('invited') {
+            Only the people above can open this page.
+          }
+          @case ('workspace') {
+            Workspace members: {{ levelLabel(shared.general.level).toLowerCase() }}.
+          }
+          @case ('public') {
+            Workspace members: {{ levelLabel(shared.general.level).toLowerCase() }}. Anyone else with the link who signs in can view.
+          }
+        }
+        @if (shared.general.inherited_from; as from) {
+          Set on “{{ from.title || 'Untitled' }}”.
+        }
+        Workspace owners and admins always have full access.
+      </p>
+    </div>
+
+    <footer>
+      <button type="button" class="secondary" (click)="copyLink()">Copy link</button>
+      <button type="button" class="primary" (click)="closed.emit()">Done</button>
+    </footer>
+  } @else {
+    <p class="note" role="status">Loading…</p>
+  }
+</div>

@@ -20,6 +20,31 @@
   font-size: 13px;
 }
 
+.live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.share-button {
+  min-height: 32px;
+  margin-left: auto;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.banner.neutral {
+  background: var(--color-soft);
+  color: var(--color-soft-text);
+}
+
 .link-button {
   min-height: 32px;
   padding: 0 4px;

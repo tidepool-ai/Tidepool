@@ -1,4 +1,8 @@
-"""Databases: schema, rows and views (T16). Access to a database is access to its page."""
+"""Databases: schema, rows and views (T16).
+
+Access to a database, its views and its rows is access to the database's page (T21): viewing needs
+view access, changing anything needs edit access.
+"""
 
 import copy
 import uuid
@@ -19,6 +23,7 @@ from app.databases.properties import (
 from app.databases.schemas import ViewConfig
 from app.pages import service as pages
 from app.pages.models import Page
+from app.permissions.service import Level
 from app.workspaces.models import Member
 
 MAX_VIEWS = 50
@@ -32,14 +37,22 @@ class DatabaseConflictError(Exception):
     """The database is in the wrong state, e.g. in the trash."""
 
 
-async def load(session: AsyncSession, database_id: uuid.UUID, user_id: uuid.UUID) -> tuple[Database, Page]:
+class DatabaseForbiddenError(Exception):
+    """The caller can see the database, but can't change it."""
+
+
+async def load(
+    session: AsyncSession, database_id: uuid.UUID, user_id: uuid.UUID, need: Level = Level.VIEW
+) -> tuple[Database, Page]:
     database = await session.get(Database, database_id)
     if database is None:
         raise DatabaseNotFoundError
     try:
-        page = await pages.get_page(session, database.page_id, user_id)
+        page = await pages.get_page(session, database.page_id, user_id, need=need)
     except pages.PageNotFoundError:
         raise DatabaseNotFoundError from None
+    except pages.PageForbiddenError as exc:
+        raise DatabaseForbiddenError(str(exc)) from None
     return database, page
 
 

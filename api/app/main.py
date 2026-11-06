@@ -19,6 +19,7 @@ from app.databases.router import router as databases_router
 from app.db import SessionLocal, get_session
 from app.files.router import router as files_router
 from app.pages.router import router as pages_router
+from app.permissions.router import router as permissions_router
 from app.realtime.broker import Broker, LocalBroker, RedisBroker
 from app.realtime.rooms import RoomManager
 from app.realtime.router import router as realtime_router
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router)
     app.include_router(workspaces_router)
     app.include_router(pages_router)
+    app.include_router(permissions_router)
     app.include_router(files_router)
     app.include_router(databases_router)
     app.include_router(realtime_router)

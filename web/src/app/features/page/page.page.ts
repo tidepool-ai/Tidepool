@@ -26,6 +26,7 @@ import { Presence } from './presence/presence';
 import { DatabaseView } from '../database/database-view';
 import { RowProperties } from '../database/row/row-properties';
 import { Row } from '../database/database.api';
+import { ShareDialog } from '../share/share-dialog';
 
 interface PageDetail extends ApiPage {
   archived_at: string | null;
@@ -33,6 +34,15 @@ interface PageDetail extends ApiPage {
   is_database?: boolean;
   /** Set for a database row: its properties show above its body (T19). */
   database_id?: string | null;
+  /** The caller's access level (T21). */
+  access?: AccessLevel;
+}
+
+export type AccessLevel = 'view' | 'comment' | 'edit' | 'full';
+
+/** View and comment access read the page without changing it. */
+function canEdit(page: PageDetail): boolean {
+  return !page.archived_at && page.access !== 'view' && page.access !== 'comment';
 }
 
 /** Content saved as JSON before live editing (T09); copied into the live document once. */
@@ -55,7 +65,7 @@ const CLOSED_MESSAGES: Record<string, string> = {
 @Component({
   selector: 'app-page-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EditorComponent, Presence, DatabaseView, RowProperties],
+  imports: [EditorComponent, Presence, DatabaseView, RowProperties, ShareDialog],
   styleUrl: './page.page.scss',
   templateUrl: './page.page.html',
   host: { '(window:beforeunload)': 'warnIfUnsaved($event)', '[class.wide]': 'isDatabase()' },
@@ -108,7 +118,12 @@ export class PagePage {
   /** This page's live document connection (one per page). */
   readonly connection = signal<CollabConnection | null>(null);
   protected readonly view = signal<View | null>(null);
-  protected readonly readOnly = computed(() => !!this.page.value()?.archived_at);
+  /** In the trash, or the caller can only view or comment. */
+  protected readonly readOnly = computed(() => {
+    const page = this.page.value();
+    return !!page && !canEdit(page);
+  });
+  protected readonly sharing = signal(false);
   /** Editable unless the page is in the trash or the server stopped taking edits. */
   protected readonly editable = computed(() => !this.readOnly() && this.connection()?.status() !== 'closed');
 
@@ -161,7 +176,7 @@ export class PagePage {
       const legacy = this.loadedContent();
       if (!connection?.synced() || page?.id !== this.pageId() || !legacy || untracked(this.view)) return;
       untracked(() => {
-        if (page.archived_at) {
+        if (!canEdit(page)) {
           // Read-only: show a snapshot and stop, so nothing is ever sent for this page.
           const content = isBlank(connection.doc) ? legacy.content : docToJson(connection.doc);
           this.view.set({ kind: 'snapshot', content });

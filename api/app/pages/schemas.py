@@ -43,6 +43,8 @@ class PageOut(BaseModel):
     database_id: uuid.UUID | None = None
     # True for a database's own page (T17).
     is_database: bool = False
+    # The caller's access level (T21): "view", "comment", "edit" or "full".
+    access: str = "full"
     created_at: datetime
     updated_at: datetime
 
