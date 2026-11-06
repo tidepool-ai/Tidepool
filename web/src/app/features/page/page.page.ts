@@ -69,6 +69,8 @@ export class PagePage {
   protected readonly auth = inject(AuthService);
 
   readonly pageId = input.required<string>();
+  /** `?row=<id>` on a database page: the row open in its side peek (T19). */
+  readonly row = input<string | null>(null);
   /** Shown inside a database's side peek (T19) rather than as the routed page. */
   readonly embedded = input(false);
   /** The title was saved (lets a database view show the new title). */

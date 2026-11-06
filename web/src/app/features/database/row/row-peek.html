@@ -9,11 +9,6 @@
     </button>
   </div>
   <div class="body">
-    <app-page-page
-      [pageId]="rowId()"
-      [embedded]="true"
-      (titleSaved)="titleSaved($event)"
-      (rowChange)="store.applyRow($event)"
-    />
+    <ng-content />
   </div>
 </aside>

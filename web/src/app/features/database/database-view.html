@@ -42,12 +42,10 @@
         }
       </div>
       @if (openRowId(); as rowId) {
-        <!-- Loaded on demand: the peek shows a page, and pages show databases (no import cycle). -->
-        @defer (on immediate) {
-          <app-row-peek [rowId]="rowId" (closed)="closeRow()" />
-        } @loading (minimum 0ms) {
-          <p class="visually-hidden" role="status">Opening the row…</p>
-        }
+        <app-row-peek [rowId]="rowId" (closed)="closeRow()">
+          <!-- The row's page, from the page view (pages show databases, so it can't be imported here). -->
+          <ng-content select="[peek-body]" />
+        </app-row-peek>
       }
     }
   }

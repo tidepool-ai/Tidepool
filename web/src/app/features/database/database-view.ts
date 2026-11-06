@@ -15,6 +15,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map, of } from 'rxjs';
 import { RowPeek } from './row/row-peek';
 import { DatabaseBoard } from './board/board';
+import { Row } from './database.api';
 import { DatabaseStore } from './database.store';
 import { DatabaseTable } from './table/table';
 
@@ -55,6 +56,15 @@ export class DatabaseView {
     });
   }
 
+  /** A row changed in the peek: show it in the table or board. */
+  applyRow(row: Row): void {
+    this.store.applyRow(row);
+  }
+
+  applyTitle(event: { id: string; title: string }): void {
+    this.store.applyTitle(event.id, event.title);
+  }
+
   /** Open a row in the side peek. */
   protected openRow(rowId: string): void {
     this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -74,9 +84,10 @@ export class DatabaseView {
     );
   }
 
-  /** Esc closes the peek, unless something inside it used the key (a menu, an editor). */
+  /** Esc outside the peek (on the table or board) closes it too, unless something there used the key. */
   protected escape(event: Event): void {
     if (!this.openRowId() || event.defaultPrevented || this.adding()) return;
+    if ((event.target as HTMLElement | null)?.closest?.('app-row-peek')) return; // the peek decides
     void this.closeRow();
   }
 

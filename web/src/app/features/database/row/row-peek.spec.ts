@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { Component, input, signal } from '@angular/core';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -11,16 +11,7 @@ import { stubLayoutForProseMirror } from '../../../../testing/prosemirror-jsdom'
 import { AuthService } from '../../../core/auth/auth.service';
 import { COLLAB_CONNECTOR } from '../../../core/collab/collab-connection';
 import { Database, Row } from '../database.api';
-import { DatabaseView } from '../database-view';
-
-/** Stands in for the database's page at /p/:pageId. */
-@Component({
-  imports: [DatabaseView],
-  template: `<app-database-view [pageId]="pageId()" workspaceId="ws" title="Tasks" />`,
-})
-class DatabasePageStub {
-  readonly pageId = input.required<string>();
-}
+import { PagePage } from '../../page/page.page';
 
 const ROWS: Row[] = [row('r1', 'First', { notes: 'one' }), row('r2', 'Second')];
 const BOARD_DB: Database = database(PROPERTIES, {
@@ -50,7 +41,12 @@ describe('Row side peek (T19)', () => {
     router = TestBed.inject(Router);
     await harness.navigateByUrl(url);
     await settle();
-    http.expectOne('/api/pages/p1/database').flush(db);
+    // The database's own page...
+    http.expectOne('/api/pages/p1').flush({ id: 'p1', workspace_id: 'ws', parent_id: null, title: 'Tasks', icon: null, archived_at: null, is_database: true });
+    http.expectOne('/api/pages/p1/content').flush({ page_id: 'p1', content: null, updated_at: null });
+    await stable();
+    // ...and its database.
+    (await next('/api/pages/p1/database')).flush(db);
     await settle();
     http.expectOne('/api/databases/db1/query').flush(page(ROWS));
     http.expectOne('/api/workspaces/ws/members').flush(MEMBERS);
@@ -91,7 +87,7 @@ describe('Row side peek (T19)', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([{ path: 'p/:pageId', component: DatabasePageStub }], withComponentInputBinding()),
+        provideRouter([{ path: 'p/:pageId', component: PagePage }], withComponentInputBinding()),
         { provide: COLLAB_CONNECTOR, useValue: collab.connector },
         { provide: AuthService, useValue: { user: signal({ id: 'u-ada', email: 'ada@example.com' }) } },
       ],
@@ -139,9 +135,30 @@ describe('Row side peek (T19)', () => {
     expect(document.activeElement).toBe(openButton);
   });
 
-  it('Esc that something inside used (a menu, an editor) leaves the peek open; Close closes it', async () => {
+  it('Esc in the editor closes the peek (the editor itself has no use for it)', async () => {
     await open('/p/p1?row=r1');
     await answerRowPage('r1', 'First');
+    const editor = peek()!.querySelector<HTMLElement>('[role="textbox"]')!;
+    editor.focus();
+    escape(editor);
+    await stable();
+    expect(peek()).toBeNull();
+    expect(router.url).toBe('/p/p1');
+  });
+
+  it('Esc goes to an open menu inside the peek first; Close closes it', async () => {
+    await open('/p/p1?row=r1');
+    await answerRowPage('r1', 'First');
+    // A menu is open in the peek (e.g. the block menu): Esc is for it.
+    const menu = document.createElement('div');
+    menu.setAttribute('role', 'menu');
+    peek()!.querySelector('.body')!.append(menu);
+    escape(menu);
+    await stable();
+    expect(peek()).toBeTruthy();
+    menu.remove();
+
+    // Esc that the table or board used (outside the peek) doesn't close it either.
     const used = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
     used.preventDefault();
     document.body.dispatchEvent(used);
