@@ -53,7 +53,7 @@ const CLOSED_MESSAGES: Record<string, string> = {
   imports: [EditorComponent, Presence, DatabaseView],
   styleUrl: './page.page.scss',
   templateUrl: './page.page.html',
-  host: { '(window:beforeunload)': 'warnIfUnsaved($event)' },
+  host: { '(window:beforeunload)': 'warnIfUnsaved($event)', '[class.wide]': 'isDatabase()' },
 })
 export class PagePage {
   private readonly http = inject(HttpClient);

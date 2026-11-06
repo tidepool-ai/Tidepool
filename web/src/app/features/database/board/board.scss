@@ -1,0 +1,202 @@
+:host {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+:host *,
+:host *::before,
+:host *::after {
+  box-sizing: border-box;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.group-by {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+}
+
+.group-by select {
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.note,
+.lead {
+  color: var(--color-muted);
+}
+
+.board {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.column {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.column-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.count {
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cards {
+  display: grid;
+  gap: 6px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: grab;
+}
+
+.card:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.card.lifted {
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--color-text) 16%, transparent);
+  transform: rotate(-1deg);
+}
+
+.card-title.untitled {
+  color: var(--color-muted);
+}
+
+.title-input {
+  width: 100%;
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.title-input:focus {
+  outline: none;
+}
+
+.new-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.new-card:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
+}
+
+.chip {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.chip.empty {
+  color: var(--color-muted);
+}
+
+.chip[data-color='red'],
+.chip[data-color='pink'] {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.chip[data-color='green'] {
+  background: var(--color-soft);
+  color: var(--color-soft-text);
+}
+
+.chip[data-color='blue'],
+.chip[data-color='purple'] {
+  background: var(--color-ai-soft);
+  color: var(--color-ai-text);
+}
+
+.chip[data-color='orange'],
+.chip[data-color='yellow'],
+.chip[data-color='brown'] {
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-surface));
+}
+
+.chip[data-color='gray'] {
+  background: color-mix(in srgb, var(--color-muted) 18%, var(--color-surface));
+}
+
+// CDK drag preview and placeholder.
+.cdk-drag-preview {
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-text) 18%, transparent);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.4;
+}
+
+.cdk-drop-list-dragging .card:not(.cdk-drag-placeholder) {
+  transition: transform 200ms ease;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

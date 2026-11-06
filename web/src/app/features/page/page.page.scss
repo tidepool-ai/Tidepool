@@ -4,6 +4,11 @@
   margin: 0 auto;
 }
 
+// Tables and boards need room: database pages get a wider column.
+:host(.wide) {
+  max-width: 1200px;
+}
+
 .status-bar {
   display: flex;
   justify-content: space-between;
