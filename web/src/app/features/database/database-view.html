@@ -34,6 +34,7 @@
           </span>
         }
       </div>
+      <app-view-toolbar [readOnly]="readOnly()" />
       <div id="view-panel" role="tabpanel" [attr.aria-labelledby]="'view-tab-' + store.view()?.id">
         @if (store.view()?.layout === 'board') {
           <app-database-board [readOnly]="readOnly()" (openRow)="openRow($event)" />

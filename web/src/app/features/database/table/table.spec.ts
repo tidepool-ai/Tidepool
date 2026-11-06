@@ -392,7 +392,7 @@ describe('Table lens (T17)', () => {
       await stable();
       expect(renderedRows()).toHaveLength(2);
       expect(document.activeElement).toBe(editor(1, 0));
-      expect(element.querySelector('[role="status"]')!.textContent).toContain('Row added');
+      expect(element.querySelector('app-database-table [role="status"]')!.textContent).toContain('Row added');
     });
 
     function openMenu(name: string) {
