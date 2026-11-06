@@ -1,0 +1,197 @@
+<p class="visually-hidden" role="status" aria-live="polite">{{ announcement() }}</p>
+@if (error(); as problem) {
+  <p class="error" role="alert">
+    {{ problem }}
+    <button type="button" class="link-button" (click)="error.set(null)">Dismiss</button>
+  </p>
+}
+@if (visible()) {
+  <div class="bar" role="group" aria-label="Filters and sorts">
+    <div class="filters">
+      @if (filter().conditions.length > 1) {
+        @if (readOnly()) {
+          <span class="mode">{{ filter().mode === 'and' ? 'All of' : 'Any of' }}</span>
+        } @else {
+          <label class="visually-hidden" for="filter-mode">Rows must match</label>
+          <select id="filter-mode" class="mode" [value]="filter().mode" (change)="setMode($any($event.target).value)">
+            <option value="and">All of</option>
+            <option value="or">Any of</option>
+          </select>
+        }
+      }
+      @for (condition of filter().conditions; track $index; let i = $index) {
+        @if (readOnly()) {
+          <span class="chip filter-chip">{{ chipText(condition) }}</span>
+        } @else {
+          <span class="chip-wrap">
+            <button
+              type="button"
+              class="chip filter-chip"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="open()?.kind === 'filter' && $any(open()).index === i"
+              [attr.aria-label]="'Filter: ' + chipText(condition)"
+              (click)="toggle({ kind: 'filter', index: i }, $event)"
+            >
+              {{ chipText(condition) }}
+            </button>
+            <button type="button" class="chip-remove" [attr.aria-label]="'Remove filter: ' + chipText(condition)" (click)="removeFilter(i)">
+              <span aria-hidden="true">×</span>
+            </button>
+          </span>
+        }
+      }
+      @if (filter().advanced) {
+        <span class="chip filter-chip">Advanced filter</span>
+        @if (!readOnly()) {
+          <button type="button" class="link-button" (click)="clearFilter()">Clear filter</button>
+        }
+      }
+      @if (!readOnly() && !filter().advanced) {
+        <button
+          type="button"
+          class="add-filter"
+          aria-haspopup="menu"
+          [attr.aria-expanded]="open()?.kind === 'add'"
+          (click)="toggle({ kind: 'add' }, $event)"
+        >
+          <span aria-hidden="true">+</span> Filter
+        </button>
+      }
+    </div>
+    @if (!readOnly() || sorts().length) {
+      <button
+        type="button"
+        class="sort-button"
+        aria-haspopup="dialog"
+        [class.active]="sorts().length > 0"
+        [attr.aria-expanded]="open()?.kind === 'sort'"
+        [disabled]="readOnly()"
+        (click)="toggle({ kind: 'sort' }, $event)"
+      >
+        <span class="sort-icon" aria-hidden="true">↑↓</span> {{ sortLabel() }}
+      </button>
+    }
+
+    @switch (open()?.kind) {
+      @case ('add') {
+        <div class="popover menu" role="menu" aria-label="Filter by" tabindex="-1" (keydown)="menuKeydown($event)">
+          @for (property of store.properties(); track property.id) {
+            <button type="button" role="menuitem" (click)="pick(property)">
+              {{ property.name }} <span class="type">{{ typeLabel(property.type) }}</span>
+            </button>
+          }
+        </div>
+      }
+      @case ('filter') {
+        @if (draft(); as condition) {
+          @if (draftProperty(); as property) {
+            <div class="popover" role="dialog" [attr.aria-label]="'Filter by ' + property.name" (keydown)="popoverKeydown($event)">
+              <div class="field-row">
+                <span class="property-name">{{ property.name }}</span>
+                @if (property.type !== 'checkbox') {
+                  <label class="visually-hidden" for="filter-operator">Condition</label>
+                  <select id="filter-operator" [value]="condition.operator" (change)="setOperator($any($event.target).value)">
+                    @for (operator of operatorsFor(property.type); track operator) {
+                      <option [value]="operator" [selected]="operator === condition.operator">
+                        {{ operatorLabel(operator, property.type) }}
+                      </option>
+                    }
+                  </select>
+                }
+              </div>
+              @if (needsValue(condition.operator)) {
+                <label class="visually-hidden" for="filter-value">Value</label>
+                @switch (valueKind(property.type)) {
+                  @case ('number') {
+                    <input
+                      #value
+                      id="filter-value"
+                      type="number"
+                      [value]="condition.value ?? ''"
+                      (change)="setValue(numberValue(value.value))"
+                      (keydown.enter)="valueEnter($event, numberValue(value.value))"
+                    />
+                  }
+                  @case ('date') {
+                    <input
+                      #value
+                      id="filter-value"
+                      type="date"
+                      [value]="condition.value ?? ''"
+                      (change)="setValue(value.value || undefined)"
+                    />
+                  }
+                  @case ('checkbox') {
+                    <select id="filter-value" [value]="condition.value ? 'true' : 'false'" (change)="setValue($any($event.target).value === 'true')">
+                      <option value="true" [selected]="condition.value">Checked</option>
+                      <option value="false" [selected]="!condition.value">Not checked</option>
+                    </select>
+                  }
+                  @case ('person') {
+                    <select id="filter-value" (change)="setValue($any($event.target).value || undefined)">
+                      <option value="" [selected]="!condition.value">Choose a person…</option>
+                      @for (member of store.members(); track member.user_id) {
+                        <option [value]="member.user_id" [selected]="member.user_id === condition.value">{{ member.email }}</option>
+                      }
+                    </select>
+                  }
+                  @case ('option') {
+                    <select id="filter-value" (change)="setValue($any($event.target).value || undefined)">
+                      <option value="" [selected]="!condition.value">Choose an option…</option>
+                      @for (option of property.options ?? []; track option.id) {
+                        <option [value]="option.id" [selected]="option.id === condition.value">{{ option.name }}</option>
+                      }
+                    </select>
+                  }
+                  @default {
+                    <input
+                      #value
+                      id="filter-value"
+                      type="text"
+                      placeholder="Type a value"
+                      [value]="condition.value ?? ''"
+                      (change)="setValue(value.value)"
+                      (keydown.enter)="valueEnter($event, value.value)"
+                    />
+                  }
+                }
+              }
+              <button type="button" class="link-button remove" (click)="removeDraft()">Remove filter</button>
+            </div>
+          }
+        }
+      }
+      @case ('sort') {
+        <div class="popover sorts" role="dialog" aria-label="Sorts" (keydown)="popoverKeydown($event)">
+          @for (sort of sorts(); track $index; let i = $index) {
+            <div class="sort-row">
+              <select [attr.aria-label]="'Sort ' + (i + 1) + ': property'" (change)="setSortProperty(i, $any($event.target).value)">
+                @for (property of sortChoices(i); track property.id) {
+                  <option [value]="property.id" [selected]="property.id === sort.property">{{ property.name }}</option>
+                }
+              </select>
+              <select [attr.aria-label]="'Sort ' + (i + 1) + ': direction'" (change)="setSortDirection(i, $any($event.target).value)">
+                <option value="ascending" [selected]="sort.direction === 'ascending'">Ascending</option>
+                <option value="descending" [selected]="sort.direction === 'descending'">Descending</option>
+              </select>
+              <button
+                type="button"
+                class="icon-button"
+                [attr.aria-label]="'Remove sort by ' + (byId().get(sort.property)?.name ?? 'property')"
+                (click)="removeSort(i)"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+          } @empty {
+            <p class="muted">No sorts: rows show in the order they were added.</p>
+          }
+          <button type="button" class="link-button add-sort" [disabled]="sorts().length >= MAX_SORTS || !unsorted().length" (click)="addSort()">
+            + Add a sort
+          </button>
+        </div>
+      }
+    }
+  </div>
+}
+

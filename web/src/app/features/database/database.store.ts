@@ -96,10 +96,14 @@ export const DatabaseStore = signalStore(
     const fail = (error: unknown, fallback: string) => patchState(store, { error: reason(error, fallback) });
     const replaceRow = (row: Row) => patchState(store, (s) => ({ rows: s.rows.map((r) => (r.id === row.id ? row : r)) }));
 
+    /** Bumped on each reload, so an older reload that finishes late is dropped. */
+    let reloads = 0;
     /** Rows for the active view, from the first page. */
     const reloadRows = async (): Promise<void> => {
+      const reload = ++reloads;
       patchState(store, { rows: [], cursor: null, hasMore: false });
       const page = await query(null);
+      if (reload !== reloads) return;
       patchState(store, { rows: page.results, cursor: page.next_cursor, hasMore: page.has_more });
     };
 
@@ -118,6 +122,30 @@ export const DatabaseStore = signalStore(
       } catch (error) {
         fail(error, "Couldn't change the properties");
         return false;
+      }
+    };
+
+    let queue: Promise<unknown> = Promise.resolve();
+    const saveQuery = async (config: Pick<ViewConfig, 'filter' | 'sorts'>, done: string): Promise<string | null> => {
+      const database = store.database();
+      const view = store.view();
+      if (!database || !view) return "Couldn't change the view";
+      try {
+        const saved = await firstValueFrom(
+          http.patch<DatabaseViewInfo>(`/api/databases/${database.id}/views/${view.id}`, {
+            config: { ...view.config, ...config },
+          }),
+        );
+        patchView(saved);
+      } catch (error) {
+        return reason(error, "Couldn't change the view");
+      }
+      try {
+        await reloadRows();
+        patchState(store, { error: null, announcement: done });
+        return null;
+      } catch (error) {
+        return reason(error, "Couldn't load the rows");
       }
     };
 
@@ -148,7 +176,9 @@ export const DatabaseStore = signalStore(
         if (!store.hasMore() || store.loadingMore() || store.status() !== 'ready') return;
         patchState(store, { loadingMore: true });
         try {
+          const reload = reloads;
           const page = await query(store.cursor());
+          if (reload !== reloads) return; // the rows were reloaded meanwhile (another view, filter or sort)
           const known = new Set(store.rows().map((r) => r.id));
           patchState(store, (s) => ({
             rows: [...s.rows, ...page.results.filter((r) => !known.has(r.id))],
@@ -242,6 +272,17 @@ export const DatabaseStore = signalStore(
           fail(error, "Couldn't change the view");
           return false;
         }
+      },
+
+      /**
+       * Save the active view's filter or sorts (T20) and show its rows again.
+       * Returns null when done, or why it couldn't be saved.
+       */
+      applyQuery(config: Pick<ViewConfig, 'filter' | 'sorts'>, done: string): Promise<string | null> {
+        // One at a time: each save sends the whole config, so it must start from the last one saved.
+        const next = queue.then(() => saveQuery(config, done));
+        queue = next.catch(() => null);
+        return next;
       },
 
       /** Fetch every remaining row (up to BOARD_LIMIT), for views that show them all at once. */
