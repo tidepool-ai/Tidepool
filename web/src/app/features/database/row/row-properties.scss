@@ -1,0 +1,123 @@
+:host {
+  display: block;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.breadcrumb {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+}
+
+.breadcrumb a {
+  color: var(--color-primary);
+}
+
+.properties {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.property {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+dt label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-muted);
+}
+
+dd {
+  margin: 0;
+}
+
+dd input:not([type='checkbox']),
+dd select {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+dd input:not([type='checkbox']):hover,
+dd select:hover {
+  border-color: var(--color-border);
+}
+
+dd input:focus-visible,
+dd select:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: 0;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0 8px;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+}
+
+.type-icon {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentcolor;
+  border-radius: var(--radius-sm);
+  opacity: 0.7;
+}
+
+.type-icon[data-type='select'],
+.type-icon[data-type='status'],
+.type-icon[data-type='multi_select'] {
+  border-radius: 50%;
+}
+
+.hint {
+  color: var(--color-muted);
+}
+
+.alert {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-text);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

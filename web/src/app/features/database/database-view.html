@@ -36,11 +36,19 @@
       </div>
       <div id="view-panel" role="tabpanel" [attr.aria-labelledby]="'view-tab-' + store.view()?.id">
         @if (store.view()?.layout === 'board') {
-          <app-database-board [readOnly]="readOnly()" />
+          <app-database-board [readOnly]="readOnly()" (openRow)="openRow($event)" />
         } @else {
-          <app-database-table [readOnly]="readOnly()" [label]="(title() || 'Untitled') + ' table'" />
+          <app-database-table [readOnly]="readOnly()" [label]="(title() || 'Untitled') + ' table'" (openRow)="openRow($event)" />
         }
       </div>
+      @if (openRowId(); as rowId) {
+        <!-- Loaded on demand: the peek shows a page, and pages show databases (no import cycle). -->
+        @defer (on immediate) {
+          <app-row-peek [rowId]="rowId" (closed)="closeRow()" />
+        } @loading (minimum 0ms) {
+          <p class="visually-hidden" role="status">Opening the row…</p>
+        }
+      }
     }
   }
   @case ('error') {

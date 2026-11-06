@@ -5,6 +5,7 @@
   </p>
 }
 <p class="visually-hidden" role="status" aria-live="polite">{{ store.announcement() }}</p>
+<p id="open-row-help" class="visually-hidden">Shift+Enter opens the row.</p>
 
 <div class="scroller">
   <div
@@ -107,6 +108,7 @@
             [attr.data-cell]="r + ':' + c"
             [attr.aria-colindex]="c + 1"
             [attr.aria-label]="cellLabel(row, property)"
+            [attr.aria-describedby]="c === 0 ? 'open-row-help' : null"
             [attr.tabindex]="isActive(r, c) || (!active() && r === 0 && c === 0) ? 0 : -1"
             [class.active]="isActive(r, c)"
             [class.editing]="isEditing(r, c)"
@@ -194,6 +196,15 @@
               @switch (property.type) {
                 @case ('title') {
                   <span class="value title" [class.untitled]="!row.title">{{ row.title || 'Untitled' }}</span>
+                  <button
+                    type="button"
+                    class="open-row"
+                    tabindex="-1"
+                    [attr.aria-label]="'Open ' + (row.title || 'Untitled')"
+                    (click)="$event.stopPropagation(); openRow.emit(row.id)"
+                  >
+                    Open
+                  </button>
                 }
                 @case ('checkbox') {
                   <input

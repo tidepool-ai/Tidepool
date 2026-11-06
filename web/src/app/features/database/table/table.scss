@@ -220,6 +220,26 @@
   font-weight: 500;
 }
 
+.open-row {
+  position: absolute;
+  right: 6px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 12px;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.row:hover .open-row,
+.cell.active .open-row {
+  opacity: 1;
+}
+
 .value.untitled {
   color: var(--color-muted);
 }

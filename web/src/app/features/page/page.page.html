@@ -25,6 +25,16 @@
   @if (titleError()) {
     <p id="title-error" class="error" role="alert">Couldn't save the title. Try again.</p>
   }
+  @if (current.database_id) {
+    <app-row-properties
+      [databaseId]="current.database_id"
+      [rowId]="current.id"
+      [workspaceId]="current.workspace_id"
+      [readOnly]="!!current.archived_at"
+      [showDatabaseLink]="!embedded()"
+      (rowChange)="rowChange.emit($event)"
+    />
+  }
   @if (isDatabase()) {
     <app-database-view [pageId]="current.id" [workspaceId]="current.workspace_id" [title]="current.title" [readOnly]="!!current.archived_at" />
   } @else if (saved.error()) {

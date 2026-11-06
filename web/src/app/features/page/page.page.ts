@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
   viewChild,
@@ -23,11 +24,15 @@ import { AuthService } from '../../core/auth/auth.service';
 import { COLLAB_CONNECTOR, CollabConnection } from '../../core/collab/collab-connection';
 import { Presence } from './presence/presence';
 import { DatabaseView } from '../database/database-view';
+import { RowProperties } from '../database/row/row-properties';
+import { Row } from '../database/database.api';
 
 interface PageDetail extends ApiPage {
   archived_at: string | null;
   /** A database's page shows its table instead of the editor (T17). */
   is_database?: boolean;
+  /** Set for a database row: its properties show above its body (T19). */
+  database_id?: string | null;
 }
 
 /** Content saved as JSON before live editing (T09); copied into the live document once. */
@@ -50,7 +55,7 @@ const CLOSED_MESSAGES: Record<string, string> = {
 @Component({
   selector: 'app-page-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [EditorComponent, Presence, DatabaseView],
+  imports: [EditorComponent, Presence, DatabaseView, RowProperties],
   styleUrl: './page.page.scss',
   templateUrl: './page.page.html',
   host: { '(window:beforeunload)': 'warnIfUnsaved($event)', '[class.wide]': 'isDatabase()' },
@@ -64,6 +69,12 @@ export class PagePage {
   protected readonly auth = inject(AuthService);
 
   readonly pageId = input.required<string>();
+  /** Shown inside a database's side peek (T19) rather than as the routed page. */
+  readonly embedded = input(false);
+  /** The title was saved (lets a database view show the new title). */
+  readonly titleSaved = output<{ id: string; title: string }>();
+  /** A row's property was saved. */
+  readonly rowChange = output<Row>();
   /** #block-<id> in the URL (block menu > Copy link) points at a block to show. */
   private readonly fragment = toSignal(inject(ActivatedRoute, { optional: true })?.fragment ?? of(null));
   protected readonly focusBlock = computed(() => {
@@ -182,6 +193,7 @@ export class PagePage {
       const saved = await firstValueFrom(this.http.patch<PageDetail>(`/api/pages/${page.id}`, { title }));
       this.page.set(saved);
       this.tree.applyTitle(saved.id, saved.title);
+      this.titleSaved.emit({ id: saved.id, title: saved.title });
     } catch {
       field.value = page.title;
       this.titleError.set(true);

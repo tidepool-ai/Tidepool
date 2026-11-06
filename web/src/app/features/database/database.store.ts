@@ -286,6 +286,15 @@ export const DatabaseStore = signalStore(
         return saved;
       },
 
+      /** A row changed elsewhere (its side peek): show the new version. */
+      applyRow(row: Row): void {
+        replaceRow(row);
+      },
+
+      applyTitle(rowId: string, title: string): void {
+        patchState(store, (s) => ({ rows: s.rows.map((r) => (r.id === rowId ? { ...r, title } : r)) }));
+      },
+
       dismissError(): void {
         patchState(store, { error: null });
       },
