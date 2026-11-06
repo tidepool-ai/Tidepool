@@ -36,11 +36,17 @@
       </div>
       <div id="view-panel" role="tabpanel" [attr.aria-labelledby]="'view-tab-' + store.view()?.id">
         @if (store.view()?.layout === 'board') {
-          <app-database-board [readOnly]="readOnly()" />
+          <app-database-board [readOnly]="readOnly()" (openRow)="openRow($event)" />
         } @else {
-          <app-database-table [readOnly]="readOnly()" [label]="(title() || 'Untitled') + ' table'" />
+          <app-database-table [readOnly]="readOnly()" [label]="(title() || 'Untitled') + ' table'" (openRow)="openRow($event)" />
         }
       </div>
+      @if (openRowId(); as rowId) {
+        <app-row-peek [rowId]="rowId" (closed)="closeRow()">
+          <!-- The row's page, from the page view (pages show databases, so it can't be imported here). -->
+          <ng-content select="[peek-body]" />
+        </app-row-peek>
+      }
     }
   }
   @case ('error') {

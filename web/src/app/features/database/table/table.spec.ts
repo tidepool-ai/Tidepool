@@ -4,6 +4,7 @@ import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@a
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { settle } from '../../../../testing/auth-testing';
+import { stubScrolling } from '../../../../testing/prosemirror-jsdom';
 import { MEMBERS, PROPERTIES, database, page, row, rows } from '../../../../testing/database-testing';
 import { Database, Property, Row } from '../database.api';
 import { DatabaseView } from '../database-view';
@@ -83,10 +84,7 @@ describe('Table lens (T17)', () => {
   const patch = (rowId: string): TestRequest => http.expectOne(`/api/databases/db1/rows/${rowId}`);
 
   beforeAll(() => {
-    // jsdom has no scrolling: CDK scrolls the viewport with scrollTo, which sets scrollTop here.
-    Element.prototype.scrollTo ??= function (this: Element, options?: ScrollToOptions | number) {
-      if (typeof options === 'object' && options.top !== undefined) this.scrollTop = options.top;
-    } as Element['scrollTo'];
+    stubScrolling();
   });
 
   beforeEach(() => {
@@ -112,7 +110,7 @@ describe('Table lens (T17)', () => {
         row('b', ''),
       ]);
       expect(headers()).toEqual([...PROPERTIES.map((p) => p.name), '+']);
-      const texts = PROPERTIES.map((_, c) => cell(0, c).textContent!.trim());
+      const texts = PROPERTIES.map((_, c) => (cell(0, c).querySelector('.value, .chips') ?? cell(0, c)).textContent!.trim());
       expect(texts).toEqual([
         'Launch',
         'Ship it',
@@ -129,7 +127,8 @@ describe('Table lens (T17)', () => {
       expect(cell(0, col('priority')).querySelector('.chip')!.getAttribute('data-color')).toBe('red');
       const link = cell(0, col('link')).querySelector('a')!;
       expect([link.target, link.rel]).toEqual(['_blank', 'noopener noreferrer']);
-      expect(cell(1, 0).textContent!.trim()).toBe('Untitled');
+      expect(cell(1, 0).querySelector('.value')!.textContent!.trim()).toBe('Untitled');
+      expect(cell(0, 0).querySelector('button')!.getAttribute('aria-label')).toBe('Open Launch');
       expect(cell(0, col('points')).getAttribute('aria-label')).toBe('Points: 1,234.5');
       expect(cell(1, col('notes')).getAttribute('aria-label')).toBe('Notes: empty');
     });
@@ -244,7 +243,7 @@ describe('Table lens (T17)', () => {
       await key(input, 'Enter');
       const request = patch('a');
       expect([request.request.method, request.request.body]).toEqual(['PATCH', { title: 'New title' }]);
-      expect(cell(0, 0).textContent!.trim()).toBe('New title'); // right away
+      expect(cell(0, 0).querySelector('.value')!.textContent!.trim()).toBe('New title'); // right away
       request.flush(row('a', 'New title'));
       await stable();
       expect(document.activeElement).toBe(cell(1, 0));
@@ -256,7 +255,7 @@ describe('Table lens (T17)', () => {
       input.value = 'Changed';
       await key(input, 'Escape');
       http.expectNone('/api/databases/db1/rows/a');
-      expect(cell(0, 0).textContent!.trim()).toBe('Keep');
+      expect(cell(0, 0).querySelector('.value')!.textContent!.trim()).toBe('Keep');
       expect(document.activeElement).toBe(cell(0, 0));
     });
 

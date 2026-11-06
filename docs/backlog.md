@@ -51,7 +51,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: 10k rows scroll smoothly in a perf test; editing tested.
 - [x] **T18 Board lens (web)**: Columns grouped by Status/Select; drag cards between columns updates the property; column counts.
   - Done when: drag and keyboard move tested.
-- [ ] **T19 Row side peek (web)**: Opens a row as a side panel with properties on top and the editor below; open as full page.
+- [x] **T19 Row side peek (web)**: Opens a row as a side panel with properties on top and the editor below; open as full page.
   - Done when: URL reflects the open row; Esc closes.
 - [ ] **T20 Filters and sorts UI (web)**: Filter chips, sort menu, saved per view.
   - Done when: settings persist per view and reload correctly.

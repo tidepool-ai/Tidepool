@@ -1,0 +1,14 @@
+<aside #panel class="peek" role="dialog" aria-modal="false" [attr.aria-label]="'Row: ' + title()" tabindex="-1">
+  <div class="bar">
+    <a class="open-full" [routerLink]="['/p', rowId()]">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8 8M10 6H4v14h14v-6" /></svg>
+      Open as full page
+    </a>
+    <button type="button" class="close" aria-label="Close" title="Close (Esc)" (click)="closed.emit()">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></svg>
+    </button>
+  </div>
+  <div class="body">
+    <ng-content />
+  </div>
+</aside>

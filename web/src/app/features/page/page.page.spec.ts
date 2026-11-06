@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { provideRouter } from '@angular/router';
 import { Editor, JSONContent } from '@tiptap/core';
 import { settle } from '../../../testing/auth-testing';
 import { FakeCollabServer, FakeConnection } from '../../../testing/collab-testing';
@@ -109,6 +110,7 @@ describe('PagePage (live editing, T15)', () => {
         { provide: FORM_POSTER, useValue: postForm },
         { provide: COLLAB_CONNECTOR, useValue: server.connector },
         { provide: AuthService, useValue: { user: me } },
+        provideRouter([]),
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -225,6 +227,21 @@ describe('PagePage (live editing, T15)', () => {
       http.expectOne('/api/pages/p1/database').flush(null, { status: 404, statusText: 'Not found' });
       await stable(tab);
       expect(tab.element.querySelector('app-database-view [role="alert"]')!.textContent).toContain("can't be found");
+    });
+  });
+
+  describe('database rows (T19)', () => {
+    it('open as a full page show their properties, with a link to the database, above the editor', async () => {
+      const tab = await open('r1', { ...page('r1', 'First'), database_id: 'db1' });
+      await settle();
+      http.expectOne('/api/databases/db1').flush({ id: 'db1', page_id: 'p1', title: 'Tasks', archived_at: null, properties: [{ id: 'title', name: 'Name', type: 'title' }, { id: 'notes', name: 'Notes', type: 'text' }], views: [] });
+      http.expectOne('/api/databases/db1/rows/r1').flush({ id: 'r1', database_id: 'db1', title: 'First', icon: null, properties: { notes: 'hi' }, created_at: '', updated_at: '' });
+      http.expectOne('/api/workspaces/ws/members').flush([]);
+      await stable(tab);
+      const link = tab.element.querySelector<HTMLAnchorElement>('app-row-properties .breadcrumb a')!;
+      expect(link.textContent!.trim()).toBe('Tasks');
+      expect(tab.element.querySelector<HTMLInputElement>('#row-prop-notes')!.value).toBe('hi');
+      expect(tab.textbox()).toBeTruthy(); // the row's body is a live page like any other
     });
   });
 

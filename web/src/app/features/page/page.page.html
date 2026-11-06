@@ -25,8 +25,22 @@
   @if (titleError()) {
     <p id="title-error" class="error" role="alert">Couldn't save the title. Try again.</p>
   }
+  @if (current.database_id) {
+    <app-row-properties
+      [databaseId]="current.database_id"
+      [rowId]="current.id"
+      [workspaceId]="current.workspace_id"
+      [readOnly]="!!current.archived_at"
+      [showDatabaseLink]="!embedded()"
+      (rowChange)="rowChange.emit($event)"
+    />
+  }
   @if (isDatabase()) {
-    <app-database-view [pageId]="current.id" [workspaceId]="current.workspace_id" [title]="current.title" [readOnly]="!!current.archived_at" />
+    <app-database-view #database [pageId]="current.id" [workspaceId]="current.workspace_id" [title]="current.title" [readOnly]="!!current.archived_at">
+      @if (row(); as rowId) {
+        <app-page-page peek-body [pageId]="rowId" [embedded]="true" (titleSaved)="database.applyTitle($event)" (rowChange)="database.applyRow($event)" />
+      }
+    </app-database-view>
   } @else if (saved.error()) {
     <!-- Without the saved content we can't tell whether it still has to be copied into the live document. -->
     <p class="error" role="alert">

@@ -8,6 +8,7 @@ import {
   computed,
   inject,
   input,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -46,6 +47,8 @@ export class DatabaseTable {
   /** A database in the trash shows its rows but takes no edits. */
   readonly readOnly = input(false);
   readonly label = input('Database');
+  /** Open a row in the side peek (Open button, or Shift+Enter on any of its cells). */
+  readonly openRow = output<string>();
 
   protected readonly types = PROPERTY_TYPES;
   protected readonly typeLabel = typeLabel;
@@ -178,6 +181,13 @@ export class DatabaseTable {
       case 'End':
         return event.ctrlKey ? move(lastRow, lastCol) : move(active.row, lastCol);
       case 'Enter':
+        event.preventDefault();
+        if (event.shiftKey) {
+          const row = this.rows()[active.row];
+          if (row) this.openRow.emit(row.id);
+          return;
+        }
+        return this.startEditing(active);
       case 'F2':
         event.preventDefault();
         return this.startEditing(active);

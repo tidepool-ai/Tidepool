@@ -53,6 +53,8 @@
               [attr.aria-describedby]="readOnly() ? null : 'board-help'"
               [class.lifted]="lifted()?.rowId === row.id"
               (keydown)="cardKeydown($event, row, ci, ri)"
+              (click)="cardClick(row)"
+              (cdkDragStarted)="dragStarted()"
             >
               @if (naming() === row.id) {
                 <input
@@ -79,7 +81,7 @@
       </section>
     }
   </div>
-  <p id="board-help" class="visually-hidden">Space picks the card up; left and right arrows choose a column; Space drops it.</p>
+  <p id="board-help" class="visually-hidden">Enter opens the card. Space picks it up; left and right arrows choose a column; Space drops it.</p>
 } @else {
   <p class="lead">This board needs a Status or Select property to group by.</p>
 }

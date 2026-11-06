@@ -1,0 +1,89 @@
+@if (database(); as db) {
+  @if (showDatabaseLink()) {
+    <p class="breadcrumb">In <a [routerLink]="['/p', db.page_id]">{{ db.title || 'Untitled' }}</a></p>
+  }
+  @if (error(); as message) {
+    <p class="alert" role="alert">{{ message }}</p>
+  }
+  @if (row()) {
+    <dl class="properties" [attr.aria-label]="'Properties'">
+      @for (property of properties(); track property.id) {
+        <div class="property">
+          <dt>
+            <label [for]="fieldId(property)">
+              <span class="type-icon" aria-hidden="true" [attr.data-type]="property.type"></span>
+              {{ property.name }}
+            </label>
+          </dt>
+          <dd>
+            @switch (property.type) {
+              @case ('select') {
+                <select [id]="fieldId(property)" [disabled]="readOnly()" #choice (change)="saveChoice(property, choice.value)">
+                  <option value="" [selected]="!value(property)">Empty</option>
+                  @for (option of property.options ?? []; track option.id) {
+                    <option [value]="option.id" [selected]="value(property) === option.id">{{ option.name }}</option>
+                  }
+                </select>
+              }
+              @case ('status') {
+                <select [id]="fieldId(property)" [disabled]="readOnly()" #choice (change)="saveChoice(property, choice.value)">
+                  <option value="" [selected]="!value(property)">Empty</option>
+                  @for (option of property.options ?? []; track option.id) {
+                    <option [value]="option.id" [selected]="value(property) === option.id">{{ option.name }}</option>
+                  }
+                </select>
+              }
+              @case ('multi_select') {
+                <fieldset [id]="fieldId(property)" class="choices" [disabled]="readOnly()">
+                  <legend class="visually-hidden">{{ property.name }}</legend>
+                  @for (option of property.options ?? []; track option.id) {
+                    <label class="choice">
+                      <input type="checkbox" [checked]="selected(property).includes(option.id)" (change)="toggleIn(property, option.id, $any($event.target).checked)" />
+                      {{ option.name }}
+                    </label>
+                  } @empty {
+                    <span class="hint">No options yet.</span>
+                  }
+                </fieldset>
+              }
+              @case ('person') {
+                <fieldset [id]="fieldId(property)" class="choices" [disabled]="readOnly()">
+                  <legend class="visually-hidden">{{ property.name }}</legend>
+                  @for (member of members(); track member.user_id) {
+                    <label class="choice">
+                      <input type="checkbox" [checked]="selected(property).includes(member.user_id)" (change)="toggleIn(property, member.user_id, $any($event.target).checked)" />
+                      {{ member.email }}
+                    </label>
+                  }
+                </fieldset>
+              }
+              @case ('date') {
+                <input [id]="fieldId(property)" type="date" [value]="date(property)" [readOnly]="readOnly()" #dateField (change)="saveDate(property, dateField.value)" />
+              }
+              @case ('checkbox') {
+                <input [id]="fieldId(property)" type="checkbox" class="checkbox" [checked]="value(property) === true" [disabled]="readOnly()" #check (change)="saveCheckbox(property, check.checked)" />
+              }
+              @default {
+                <input
+                  [id]="fieldId(property)"
+                  [type]="property.type === 'url' ? 'url' : 'text'"
+                  [attr.inputmode]="property.type === 'number' ? 'decimal' : null"
+                  [placeholder]="'Empty'"
+                  [value]="text(property)"
+                  [readOnly]="readOnly()"
+                  #field
+                  (keydown.enter)="field.blur()"
+                  (blur)="saveText(property, field.value)"
+                />
+              }
+            }
+          </dd>
+        </div>
+      } @empty {
+        <p class="hint">This database has no properties besides the title.</p>
+      }
+    </dl>
+  }
+} @else if (error(); as message) {
+  <p class="alert" role="alert">{{ message }}</p>
+}

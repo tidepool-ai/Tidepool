@@ -9,6 +9,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   untracked,
 } from '@angular/core';
@@ -48,6 +49,10 @@ interface Lifted {
 export class DatabaseBoard {
   protected readonly store = inject(DatabaseStore);
   readonly readOnly = input(false);
+  /** Open a card's row in the side peek (click, or Enter). */
+  readonly openRow = output<string>();
+  /** A drag just ended: the click that follows it isn't an "open". */
+  private dragged = false;
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
@@ -102,6 +107,18 @@ export class DatabaseBoard {
 
   // Mouse --------------------------------------------------------------------------------------------
 
+  protected dragStarted(): void {
+    this.dragged = true;
+  }
+
+  protected cardClick(row: Row): void {
+    if (this.dragged) {
+      this.dragged = false;
+      return;
+    }
+    if (this.naming() !== row.id && !this.lifted()) this.openRow.emit(row.id);
+  }
+
   protected dropped(event: CdkDragDrop<string, string, Row>): void {
     if (event.previousContainer === event.container) return; // order within a column isn't stored
     void this.moveTo(event.item.data, event.container.data);
@@ -152,6 +169,10 @@ export class DatabaseBoard {
       return;
     }
     switch (event.key) {
+      case 'Enter':
+        event.preventDefault();
+        this.openRow.emit(row.id);
+        return;
       case ' ':
         if (this.readOnly()) return;
         event.preventDefault();
