@@ -9,7 +9,7 @@
       <span class="save-status" role="status" aria-live="polite">{{ statusMessage() }}</span>
     </span>
     @if (!embedded()) {
-      <button #shareButton type="button" class="share-button" aria-haspopup="dialog" (click)="sharing.set(true)">Share</button>
+      <button type="button" class="share-button" aria-haspopup="dialog" (click)="sharing.set(true)">Share</button>
     }
   </div>
   @if (sharing()) {
@@ -18,7 +18,7 @@
       [workspaceId]="current.workspace_id"
       [title]="current.title"
       [hasParent]="!!current.parent_id"
-      (closed)="sharing.set(false); shareButton.focus()"
+      (closed)="closeShare()"
     />
   }
   @if (current.archived_at) {

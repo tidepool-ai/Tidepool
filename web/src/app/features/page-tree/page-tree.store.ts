@@ -17,6 +17,7 @@ export interface ApiPage {
 interface ApiWorkspace {
   id: string;
   name: string;
+  role?: string;
 }
 
 export interface TreePage {
@@ -98,7 +99,9 @@ export const PageTreeStore = signalStore(
         if (store.status() === 'loading' || store.status() === 'ready') return;
         patchState(store, { status: 'loading' });
         try {
-          const [workspace] = await firstValueFrom(http.get<ApiWorkspace[]>('/api/workspaces'));
+          const workspaces = await firstValueFrom(http.get<ApiWorkspace[]>('/api/workspaces'));
+          // Pages shared with someone make them a guest of that workspace (T21): show one of their own.
+          const workspace = workspaces.find((w) => w.role !== 'guest') ?? workspaces[0];
           if (!workspace) throw new Error('no workspace');
           const pages = await firstValueFrom(http.get<ApiPage[]>(`/api/workspaces/${workspace.id}/pages`));
           patchState(store, { workspaceId: workspace.id, status: 'ready' });

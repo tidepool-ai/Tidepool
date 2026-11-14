@@ -223,7 +223,7 @@ describe('PagePage (live editing, T15)', () => {
       expect(tab.element.classList).toContain('wide'); // tables and boards get more room
       expect(tab.textbox()).toBeNull();
       expect(tab.element.querySelector('app-database-view')).toBeTruthy();
-      expect(tab.element.querySelector<HTMLElement>('.status-bar')!.hidden).toBe(true);
+      expect(tab.element.querySelector<HTMLElement>('.status-bar .live')!.hidden).toBe(true);
       http.expectOne('/api/pages/p1/database').flush(null, { status: 404, statusText: 'Not found' });
       await stable(tab);
       expect(tab.element.querySelector('app-database-view [role="alert"]')!.textContent).toContain("can't be found");
@@ -371,6 +371,47 @@ describe('PagePage (live editing, T15)', () => {
       const connection = tab.connection();
       tab.fixture.destroy();
       expect(connection.destroyed).toBe(true);
+    });
+  });
+
+  describe('access levels (T21)', () => {
+    it('show a read-only snapshot to people who can only view or comment', async () => {
+      const writer = await open('p1', page('p1', 'Plan'));
+      writer.editor()!.commands.insertContent('Shared text');
+      await stable(writer);
+
+      for (const access of ['view', 'comment']) {
+        const tab = await open('p1', { ...page('p1', 'Plan'), access }, saved('p1'));
+        const banner = tab.element.querySelector('.banner')!.textContent!;
+        expect(banner).toContain(access === 'view' ? 'You can view this page' : 'You can view and comment on this page');
+        expect(tab.textbox()!.getAttribute('contenteditable')).toBe('false');
+        expect(text(tab)).toBe('Shared text');
+        expect(tab.connection().sent).toEqual([]);
+        expect(tab.element.querySelector<HTMLInputElement>('input[aria-label="Page title"]')!.readOnly).toBe(true);
+      }
+    });
+
+    it('opens the Share dialog and puts focus back on Share when it closes', async () => {
+      const tab = await open('p1', { ...page('p1', 'Plan'), access: 'edit' });
+      const share = tab.element.querySelector<HTMLButtonElement>('.share-button')!;
+      expect(share.textContent!.trim()).toBe('Share');
+      share.click();
+      await stable(tab);
+      expect(tab.element.querySelector('app-share-dialog [role="dialog"]')).not.toBeNull();
+      http.expectOne('/api/pages/p1/permissions').flush({
+        page_id: 'p1',
+        access: 'edit',
+        can_share: false,
+        general: { access: 'workspace', level: 'full', inherited_from: null },
+        people: [],
+      });
+      await stable(tab);
+      Array.from(tab.element.querySelectorAll<HTMLButtonElement>('app-share-dialog button'))
+        .find((b) => b.textContent!.trim() === 'Done')!
+        .click();
+      await stable(tab);
+      expect(tab.element.querySelector('app-share-dialog')).toBeNull();
+      expect(document.activeElement).toBe(share);
     });
   });
 

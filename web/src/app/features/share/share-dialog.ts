@@ -1,6 +1,19 @@
 import { A11yModule } from '@angular/cdk/a11y';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 export type Level = 'view' | 'comment' | 'edit' | 'full';
@@ -59,7 +72,7 @@ function reason(error: unknown, fallback: string): string {
   imports: [A11yModule],
   templateUrl: './share-dialog.html',
   styleUrl: './share-dialog.scss',
-  host: { '(keydown.escape)': 'escape($event)' },
+  host: { '(document:keydown.escape)': 'escape($event)', '(click)': 'backdropClick($event)' },
 })
 export class ShareDialog {
   private readonly http = inject(HttpClient);
@@ -96,7 +109,12 @@ export class ShareDialog {
   });
   protected readonly link = computed(() => `${location.origin}/p/${this.pageId()}`);
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+
   constructor() {
+    // Focus starts in the dialog: on the email field once loaded (or the Close button meanwhile).
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('.icon-button')?.focus());
     effect(() => {
       const pageId = this.pageId();
       const workspaceId = this.workspaceId();
@@ -108,6 +126,9 @@ export class ShareDialog {
     this.loadError.set(false);
     try {
       this.permissions.set(await firstValueFrom(this.http.get<Permissions>(`/api/pages/${pageId}/permissions`)));
+      afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('#share-email')?.focus(), {
+        injector: this.injector,
+      });
     } catch {
       this.loadError.set(true);
       return;
@@ -146,7 +167,11 @@ export class ShareDialog {
       `Invited ${email}: ${levelLabel(level)}`,
       "Couldn't invite them",
     );
-    if (sent) this.email.set('');
+    if (sent) {
+      this.email.set('');
+      // Ready for the next person (the Invite button is disabled again while the field is empty).
+      this.host.nativeElement.querySelector<HTMLElement>('#share-email')?.focus();
+    }
   }
 
   protected async setLevel(person: Person, value: string): Promise<void> {
@@ -197,6 +222,11 @@ export class ShareDialog {
 
   protected initial(email: string): string {
     return email.charAt(0).toUpperCase();
+  }
+
+  /** A click outside the dialog closes it (keyboard users have Escape and the Close button). */
+  protected backdropClick(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('backdrop')) this.closed.emit();
   }
 
   protected escape(event: Event): void {

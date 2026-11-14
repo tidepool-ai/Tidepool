@@ -2,6 +2,9 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -76,6 +79,8 @@ export class PagePage {
   private readonly editor = viewChild(EditorComponent);
   private readonly images = inject(ImageUploadService);
   private readonly connect = inject(COLLAB_CONNECTOR);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
   protected readonly auth = inject(AuthService);
 
   readonly pageId = input.required<string>();
@@ -186,6 +191,14 @@ export class PagePage {
         if (legacy.content) seedFromJson(connection.doc, legacy.content, editorExtensions(''));
         this.view.set({ kind: 'live', doc: connection.doc });
       });
+    });
+  }
+
+  /** Close the Share dialog and put focus back on its button. */
+  protected closeShare(): void {
+    this.sharing.set(false);
+    afterNextRender(() => this.host.nativeElement.querySelector<HTMLElement>('.share-button')?.focus(), {
+      injector: this.injector,
     });
   }
 

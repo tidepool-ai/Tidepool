@@ -82,6 +82,20 @@ describe('PageTree', () => {
     expect(link('Docs').querySelector('.emoji')?.textContent).toBe('📚');
   });
 
+  it("shows the person's own workspace, not one they're only a guest of (T21)", async () => {
+    fixture = TestBed.createComponent(PageTree);
+    tree = fixture.nativeElement;
+    fixture.detectChanges();
+    http.expectOne('/api/workspaces').flush([
+      { id: 'shared', name: "grace's workspace", role: 'guest' },
+      { id: WORKSPACE, name: "ada's workspace", role: 'owner' },
+    ]);
+    await settle();
+    http.expectOne(`/api/workspaces/${WORKSPACE}/pages`).flush([apiPage('mine', 'Mine')]);
+    await stable();
+    expect(titles()).toEqual(['Mine']);
+  });
+
   it('shows an empty state and a retry when loading fails', async () => {
     await render([]);
     expect(tree.textContent).toContain('No pages yet');

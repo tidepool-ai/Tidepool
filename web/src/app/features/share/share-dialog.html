@@ -1,4 +1,4 @@
-<div class="backdrop" (click)="closed.emit()"></div>
+<div class="backdrop"></div>
 <div
   class="dialog"
   role="dialog"
@@ -46,7 +46,7 @@
             <option [value]="level.value" [selected]="level.value === inviteLevel()">{{ level.label }}</option>
           }
         </select>
-        <button type="submit" class="primary" [disabled]="busy() || !email().trim()">Invite</button>
+        <button type="submit" class="primary" [disabled]="!email().trim()">Invite</button>
       </form>
     } @else {
       <p class="note">You have {{ levelLabel(shared.access).toLowerCase() }} here. Only people with full access can change who has access.</p>
@@ -71,7 +71,6 @@
           @if (canShare()) {
             <select
               [attr.aria-label]="'Access for ' + person.email"
-              [disabled]="busy()"
               (change)="setLevel(person, $any($event.target).value)"
             >
               @for (level of LEVELS; track level.value) {
@@ -95,7 +94,6 @@
       @if (canShare()) {
         <select
           aria-labelledby="general-label"
-          [disabled]="busy()"
           (change)="setGeneral($any($event.target).value)"
         >
           @if (hasParent()) {
@@ -108,8 +106,7 @@
         @if (shared.general.access !== 'invited') {
           <select
             aria-label="Access for workspace members"
-            [disabled]="busy()"
-            (change)="setGeneral(generalChoice() === 'inherit' ? shared.general.access : generalChoice(), $any($event.target).value)"
+              (change)="setGeneral(generalChoice() === 'inherit' ? shared.general.access : generalChoice(), $any($event.target).value)"
           >
             @for (level of LEVELS; track level.value) {
               <option [value]="level.value" [selected]="level.value === shared.general.level">{{ level.label }}</option>
