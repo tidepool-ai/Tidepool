@@ -1,0 +1,108 @@
+<div class="backdrop"></div>
+<div class="bar" role="dialog" aria-modal="true" aria-label="Search and commands" cdkTrapFocus>
+  <div class="input-row">
+    <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6" /><path d="m16 16 4 4" /></svg>
+    <input
+      #field
+      type="text"
+      role="combobox"
+      aria-label="Search pages or run a command"
+      aria-autocomplete="list"
+      aria-expanded="true"
+      aria-controls="command-results"
+      [attr.aria-activedescendant]="activeItem()?.id ?? null"
+      [attr.aria-describedby]="'command-help'"
+      placeholder="Search pages or type a command…"
+      autocomplete="off"
+      spellcheck="false"
+      [value]="query()"
+      (input)="setQuery($any($event.target).value)"
+      (keydown)="keydown($event)"
+    />
+    <kbd aria-hidden="true">Esc</kbd>
+  </div>
+  <p id="command-help" class="visually-hidden">Up and down arrows choose, Enter opens, Tab switches between All, Pages and Actions.</p>
+
+  <div class="scopes" role="tablist" aria-label="Show">
+    @for (option of SCOPES; track option.value) {
+      <button
+        type="button"
+        role="tab"
+        tabindex="-1"
+        [attr.aria-selected]="scope() === option.value"
+        (click)="setScope(option.value)"
+      >
+        {{ option.label }}
+      </button>
+    }
+  </div>
+
+  @if (error(); as problem) {
+    <p class="error" role="alert">{{ problem }}</p>
+  }
+
+  <div class="body">
+    <ul id="command-results" class="results" role="listbox" aria-label="Results">
+      @for (item of items(); track item.id; let i = $index) {
+        @if (i === 0 && item.kind === 'page') {
+          <li class="group" role="presentation">{{ heading() }}</li>
+        }
+        @if (item.kind === 'action' && (i === 0 || items()[i - 1].kind === 'page')) {
+          <li class="group" role="presentation">Actions</li>
+        }
+        <!-- Options take clicks; the keyboard works through the input (combobox pattern), so they aren't focusable. -->
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <li
+          role="option"
+          [id]="item.id"
+          [class.active]="i === active()"
+          [attr.aria-selected]="i === active()"
+          [attr.aria-disabled]="item.disabled ? true : null"
+          (mousemove)="hover(i)"
+          (mousedown)="$event.preventDefault()"
+          (click)="choose(item)"
+        >
+          <span class="icon" aria-hidden="true">
+            @if (item.page) {
+              {{ item.page.icon || (item.page.is_database ? '▦' : '📄') }}
+            } @else {
+              {{ item.id === 'cmd-new-task' ? '☑' : '+' }}
+            }
+          </span>
+          <span class="text">
+            <span class="label">{{ item.label }}</span>
+            @if (item.detail) {
+              <span class="detail">{{ item.detail }}</span>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+    @if (!items().length) {
+      <p class="empty" role="status">
+        @if (loading()) {
+          Searching…
+        } @else if (failed()) {
+          Couldn't search. Check your connection and try again.
+        } @else if (query().trim()) {
+          No pages match “{{ query().trim() }}”.
+        } @else {
+          No recent pages yet.
+        }
+      </p>
+    } @else {
+      <p class="visually-hidden" role="status">{{ items().length }} results</p>
+    }
+
+    @if (activeItem()?.page; as page) {
+      <aside class="preview" aria-hidden="true">
+        <span class="preview-icon">{{ page.icon || (page.is_database ? '▦' : '📄') }}</span>
+        <h2>{{ page.title || 'Untitled' }}</h2>
+        @if (page.path.length) {
+          <p class="crumbs">{{ page.path.join(' / ') }}</p>
+        }
+        <p class="meta">{{ page.is_database ? 'Database' : page.database_id ? 'Database row' : 'Page' }} · {{ edited(page) }}</p>
+      </aside>
+    }
+  </div>
+</div>

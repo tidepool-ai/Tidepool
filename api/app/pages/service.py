@@ -8,11 +8,11 @@ edit the parent.
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import ColumnElement, bindparam, exists, select, text, update
+from sqlalchemy import ColumnElement, Select, bindparam, case, exists, func, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.pages.models import Ltree, Page, PageContent, path_label
+from app.pages.models import Ltree, Page, PageContent, PageVisit, path_label
 from app.permissions import service as permissions
 from app.permissions.service import Level
 from app.workspaces.models import Role
@@ -262,3 +262,104 @@ async def save_content(session: AsyncSession, page: Page, doc: dict, user_id: uu
     content = await session.get(PageContent, page.id, populate_existing=True)
     assert content is not None
     return content
+
+
+# Search and recent pages (T22) ------------------------------------------------------------------
+
+SEARCH_BATCH = 200
+SEARCH_BATCHES = 5
+
+
+def _like_pattern(query: str) -> str:
+    escaped = query.lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+async def _open_pages(
+    session: AsyncSession, query: Select[tuple[Page]], user_id: uuid.UUID, limit: int
+) -> list[Page]:
+    """Run `query` a batch at a time, keeping only pages the caller can open, until `limit` are found."""
+    found: list[Page] = []
+    for batch in range(SEARCH_BATCHES):
+        pages = list(await session.scalars(query.limit(SEARCH_BATCH).offset(batch * SEARCH_BATCH)))
+        found += await permissions.visible(session, pages, user_id)
+        if len(found) >= limit or len(pages) < SEARCH_BATCH:
+            break
+    return found[:limit]
+
+
+async def search(
+    session: AsyncSession, workspace_id: uuid.UUID, user_id: uuid.UUID, text_query: str, limit: int
+) -> list[Page]:
+    """Pages in the workspace whose title contains the text, that the caller can open.
+
+    Titles that start with it come first, then shorter titles, then the most recently edited.
+    """
+    pattern = _like_pattern(text_query)
+    title = func.lower(Page.title)
+    query = (
+        select(Page)
+        .where(
+            Page.workspace_id == workspace_id, Page.archived_at.is_(None), title.like(pattern, escape="\\")
+        )
+        .order_by(
+            case((title.like(pattern[1:], escape="\\"), 0), else_=1),
+            func.length(Page.title),
+            Page.updated_at.desc(),
+            Page.id,
+        )
+    )
+    return await _open_pages(session, query, user_id, limit)
+
+
+async def recent(
+    session: AsyncSession, workspace_id: uuid.UUID, user_id: uuid.UUID, limit: int
+) -> list[Page]:
+    """Pages the caller opened most recently, topped up with the workspace's recently edited pages."""
+    visited = (
+        select(Page)
+        .join(PageVisit, (PageVisit.page_id == Page.id) & (PageVisit.user_id == user_id))
+        .where(Page.workspace_id == workspace_id, Page.archived_at.is_(None))
+        .order_by(PageVisit.visited_at.desc(), Page.id)
+    )
+    pages = await _open_pages(session, visited, user_id, limit)
+    if len(pages) < limit:
+        seen = {page.id for page in pages}
+        edited = (
+            select(Page)
+            .where(
+                Page.workspace_id == workspace_id,
+                Page.archived_at.is_(None),
+                Page.id.not_in(seen or {uuid.uuid4()}),
+            )
+            .order_by(Page.updated_at.desc(), Page.id)
+        )
+        pages += await _open_pages(session, edited, user_id, limit - len(pages))
+    return pages
+
+
+async def record_visit(session: AsyncSession, page: Page, user_id: uuid.UUID) -> None:
+    await session.execute(
+        insert(PageVisit)
+        .values(user_id=user_id, page_id=page.id)
+        .on_conflict_do_update(
+            index_elements=[PageVisit.user_id, PageVisit.page_id],
+            set_={"visited_at": text("clock_timestamp()")},
+        )
+    )
+
+
+async def breadcrumbs(
+    session: AsyncSession, pages: list[Page], user_id: uuid.UUID
+) -> dict[uuid.UUID, list[str]]:
+    """Each page's ancestors' titles, top first, leaving out ancestors the caller can't open."""
+    ancestor_ids = {i for page in pages for i in permissions.chain(page)[1:]}
+    if not ancestor_ids:
+        return {page.id: [] for page in pages}
+    ancestors = list(await session.scalars(select(Page).where(Page.id.in_(ancestor_ids))))
+    titles = {
+        page.id: page.title or "Untitled" for page in await permissions.visible(session, ancestors, user_id)
+    }
+    return {
+        page.id: [titles[i] for i in reversed(permissions.chain(page)[1:]) if i in titles] for page in pages
+    }

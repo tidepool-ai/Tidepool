@@ -113,11 +113,14 @@ export const PageTreeStore = signalStore(
 
       toggle,
 
-      /** Create an untitled page or database (top level, or inside `parentId`) and start renaming it. */
-      async create(parentId: string | null, kind: 'page' | 'database' = 'page'): Promise<TreePage | null> {
+      /**
+       * Create a page or database (top level, or inside `parentId`). Untitled ones start in rename mode;
+       * the command bar (T22) passes a title instead.
+       */
+      async create(parentId: string | null, kind: 'page' | 'database' = 'page', title = ''): Promise<TreePage | null> {
         const workspaceId = store.workspaceId();
         if (!workspaceId) return null;
-        const body = { workspace_id: workspaceId, parent_id: parentId };
+        const body = { workspace_id: workspaceId, parent_id: parentId, ...(title ? { title } : {}) };
         try {
           const page: ApiPage =
             kind === 'database'
@@ -138,7 +141,7 @@ export const PageTreeStore = signalStore(
             pages: { ...state.pages, [page.id]: toTreePage(page) },
             // An unloaded parent gets its full list (including the new page) when it expands below.
             children: siblings ? { ...state.children, [key]: [...siblings, page.id] } : state.children,
-            renamingId: page.id,
+            renamingId: title ? state.renamingId : page.id,
           }));
           if (parentId && !store.expanded()[parentId]) await toggle(parentId);
           announce(kind === 'database' ? 'Database created' : 'Page created');

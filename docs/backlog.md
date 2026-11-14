@@ -60,7 +60,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
 
 - [x] **T21 Permissions + Share dialog (api + web)**: Page access levels (full, edit, comment, view) inherited down the tree; invite by email; link access (invited only / workspace / public).
   - Done when: API tests cover inheritance and overrides; dialog matches the design.
-- [ ] **T22 Command bar (api + web)**: Cmd/Ctrl+K palette; title search API respecting permissions; recent pages when empty; actions (new page, create task).
+- [x] **T22 Command bar (api + web)**: Cmd/Ctrl+K palette; title search API respecting permissions; recent pages when empty; actions (new page, create task).
   - Done when: keyboard-only flow tested; results never include pages the user can't open.
 - [ ] **T23 AI service (api)**: `app/ai/` module using the `openai` SDK with `GLM_BASE_URL`/`GLM_API_KEY`/`GLM_MODEL`; `POST /api/ai/complete` streams SSE; per-user daily token quota; usage log.
   - Done when: tests use a fake OpenAI-compatible server; quota and timeout paths tested.
