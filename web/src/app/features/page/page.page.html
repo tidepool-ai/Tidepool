@@ -3,12 +3,28 @@
   <p class="lead">It may have been deleted, or you don't have access to it.</p>
 } @else if (page.hasValue()) {
   @let current = page.value();
-  <div class="status-bar" [hidden]="isDatabase()">
-    <app-presence [awareness]="connection()?.awareness ?? null" [selfId]="auth.user()?.id ?? null" />
-    <span class="save-status" role="status" aria-live="polite">{{ statusMessage() }}</span>
+  <div class="status-bar">
+    <span class="live" [hidden]="isDatabase()">
+      <app-presence [awareness]="connection()?.awareness ?? null" [selfId]="auth.user()?.id ?? null" />
+      <span class="save-status" role="status" aria-live="polite">{{ statusMessage() }}</span>
+    </span>
+    @if (!embedded()) {
+      <button type="button" class="share-button" aria-haspopup="dialog" (click)="sharing.set(true)">Share</button>
+    }
   </div>
+  @if (sharing()) {
+    <app-share-dialog
+      [pageId]="current.id"
+      [workspaceId]="current.workspace_id"
+      [title]="current.title"
+      [hasParent]="!!current.parent_id"
+      (closed)="closeShare()"
+    />
+  }
   @if (current.archived_at) {
     <p class="banner" role="status">This page is in the trash. Restore it to edit.</p>
+  } @else if (readOnly()) {
+    <p class="banner neutral" role="status">You can {{ current.access === 'comment' ? 'view and comment on' : 'view' }} this page, but not change it.</p>
   }
   <input
     #titleField
@@ -17,7 +33,7 @@
     placeholder="Untitled"
     maxlength="200"
     [value]="current.title"
-    [readOnly]="!!current.archived_at"
+    [readOnly]="readOnly()"
     [attr.aria-describedby]="titleError() ? 'title-error' : null"
     (keydown.enter)="titleEnter($event, titleField)"
     (blur)="saveTitle(titleField)"
@@ -30,13 +46,13 @@
       [databaseId]="current.database_id"
       [rowId]="current.id"
       [workspaceId]="current.workspace_id"
-      [readOnly]="!!current.archived_at"
+      [readOnly]="readOnly()"
       [showDatabaseLink]="!embedded()"
       (rowChange)="rowChange.emit($event)"
     />
   }
   @if (isDatabase()) {
-    <app-database-view #database [pageId]="current.id" [workspaceId]="current.workspace_id" [title]="current.title" [readOnly]="!!current.archived_at">
+    <app-database-view #database [pageId]="current.id" [workspaceId]="current.workspace_id" [title]="current.title" [readOnly]="readOnly()">
       @if (row(); as rowId) {
         <app-page-page peek-body [pageId]="rowId" [embedded]="true" (titleSaved)="database.applyTitle($event)" (rowChange)="database.applyRow($event)" />
       }

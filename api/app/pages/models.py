@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid, func, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import UserDefinedType
@@ -30,6 +30,14 @@ class Page(Base):
     __table_args__ = (
         Index("ix_pages_path", "path", postgresql_using="gist"),
         Index("ix_pages_workspace_id_parent_id", "workspace_id", "parent_id"),
+        CheckConstraint(
+            "general_access IS NULL OR general_access IN ('invited', 'workspace', 'public')",
+            name="general_access",
+        ),
+        CheckConstraint(
+            "general_level IS NULL OR general_level IN ('view', 'comment', 'edit', 'full')",
+            name="general_level",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -45,6 +53,10 @@ class Page(Base):
     database_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("databases.id", ondelete="CASCADE"))
     # A row's property values, keyed by property id (see app/databases/properties.py).
     properties: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'::jsonb"), default=dict)
+    # Who else can open it (T21): "invited", "workspace" or "public"; null inherits from the parent
+    # (the top level defaults to "workspace"). `general_level` is what workspace members get.
+    general_access: Mapped[str | None] = mapped_column(String(16))
+    general_level: Mapped[str | None] = mapped_column(String(16))
     # clock_timestamp(): real write time, so sibling order is stable within one transaction.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.clock_timestamp()
@@ -53,6 +65,9 @@ class Page(Base):
         DateTime(timezone=True), server_default=func.clock_timestamp(), onupdate=func.clock_timestamp()
     )
     # `is_database` (does this page hold a database?) is added in app.databases.models.
+
+    # The caller's access level, set by the access check (app.permissions.service); not stored.
+    access = "full"
 
 
 class PageContent(Base):

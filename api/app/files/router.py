@@ -12,6 +12,7 @@ from app.db import get_session
 from app.files import storage
 from app.files.schemas import PresignIn, PresignOut
 from app.pages import service as pages
+from app.permissions.service import Level
 
 router = APIRouter(tags=["files"])
 
@@ -26,9 +27,11 @@ NOT_SET_UP = HTTPException(
 async def presign(body: PresignIn, user: CurrentUser, session: Session) -> PresignOut:
     """Check the image and the caller's access to the page, then hand out a short-lived upload form."""
     try:
-        page = await pages.get_page(session, body.page_id, user.id)
+        page = await pages.get_page(session, body.page_id, user.id, need=Level.EDIT)
     except pages.PageNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Page not found") from None
+    except pages.PageForbiddenError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from None
     if page.archived_at is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Page is in the trash")
     if body.content_type not in storage.IMAGE_TYPES:

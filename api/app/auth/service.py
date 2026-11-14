@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.models import MagicLink, RefreshToken, User
 from app.config import settings
 from app.email.sender import Email, EmailError, email_configured, send_email
+from app.workspaces.models import Workspace
 from app.workspaces.service import create_personal_workspace
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,8 @@ async def consume_magic_link(session: AsyncSession, token: str) -> User:
         user = User(email=link.email)
         session.add(user)
         await session.flush()
+    # People invited to a page (T21) exist before they first sign in, without a workspace of their own.
+    if await session.scalar(select(Workspace.id).where(Workspace.owner_id == user.id).limit(1)) is None:
         await create_personal_workspace(session, user)
     return user
 

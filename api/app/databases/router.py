@@ -28,6 +28,7 @@ from app.databases.schemas import (
 from app.db import get_session
 from app.pages import service as pages
 from app.pages.models import Page
+from app.permissions.service import Level
 
 router = APIRouter(tags=["databases"])
 
@@ -46,11 +47,15 @@ def _conflict(exc: Exception) -> HTTPException:
     return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
 
-async def _load(session: AsyncSession, database_id: uuid.UUID, user_id: uuid.UUID) -> tuple[Database, Page]:
+async def _load(
+    session: AsyncSession, database_id: uuid.UUID, user_id: uuid.UUID, need: Level = Level.VIEW
+) -> tuple[Database, Page]:
     try:
-        return await service.load(session, database_id, user_id)
+        return await service.load(session, database_id, user_id, need)
     except service.DatabaseNotFoundError:
         raise _not_found() from None
+    except service.DatabaseForbiddenError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from None
 
 
 def _view_out(view: DatabaseView) -> ViewOut:
@@ -83,6 +88,8 @@ async def create_database(body: DatabaseCreate, user: CurrentUser, session: Sess
         )
     except pages.PageNotFoundError:
         raise _not_found("Workspace") from None
+    except pages.PageForbiddenError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from None
     except (SchemaError, pages.InvalidParentError) as exc:
         raise _invalid(exc) from None
     except pages.PageConflictError as exc:
@@ -111,7 +118,7 @@ async def database_for_page(page_id: uuid.UUID, user: CurrentUser, session: Sess
 async def update_schema(
     database_id: uuid.UUID, body: SchemaIn, user: CurrentUser, session: Session
 ) -> DatabaseOut:
-    database, page = await _load(session, database_id, user.id)
+    database, page = await _load(session, database_id, user.id, Level.EDIT)
     try:
         await service.update_schema(session, database, page, body.properties)
     except SchemaError as exc:
@@ -132,7 +139,7 @@ def _row_out(row: Page) -> RowOut:
 
 @router.post("/api/databases/{database_id}/rows", status_code=status.HTTP_201_CREATED)
 async def create_row(database_id: uuid.UUID, body: RowIn, user: CurrentUser, session: Session) -> RowOut:
-    database, page = await _load(session, database_id, user.id)
+    database, page = await _load(session, database_id, user.id, Level.EDIT)
     try:
         row = await service.create_row(
             session, database, page, user.id, body.title, body.icon, body.properties
@@ -158,7 +165,7 @@ async def get_row(database_id: uuid.UUID, row_id: uuid.UUID, user: CurrentUser, 
 async def update_row(
     database_id: uuid.UUID, row_id: uuid.UUID, body: RowUpdate, user: CurrentUser, session: Session
 ) -> RowOut:
-    database, page = await _load(session, database_id, user.id)
+    database, page = await _load(session, database_id, user.id, Level.EDIT)
     try:
         row = await service.get_row(session, database, row_id)
         row = await service.update_row(session, database, page, row, body.model_dump(exclude_unset=True))
@@ -200,7 +207,7 @@ async def query_rows(database_id: uuid.UUID, body: QueryIn, user: CurrentUser, s
 
 @router.post("/api/databases/{database_id}/views", status_code=status.HTTP_201_CREATED)
 async def create_view(database_id: uuid.UUID, body: ViewIn, user: CurrentUser, session: Session) -> ViewOut:
-    database, page = await _load(session, database_id, user.id)
+    database, page = await _load(session, database_id, user.id, Level.EDIT)
     try:
         view = await service.create_view(session, database, page, body.name, body.layout, body.config)
     except q.QueryError as exc:
@@ -215,7 +222,7 @@ async def create_view(database_id: uuid.UUID, body: ViewIn, user: CurrentUser, s
 async def update_view(
     database_id: uuid.UUID, view_id: uuid.UUID, body: ViewUpdate, user: CurrentUser, session: Session
 ) -> ViewOut:
-    database, page = await _load(session, database_id, user.id)
+    database, page = await _load(session, database_id, user.id, Level.EDIT)
     try:
         view = await service.get_view(session, database, view_id)
         fields = {name: getattr(body, name) for name in body.model_fields_set}
@@ -234,7 +241,7 @@ async def update_view(
 async def delete_view(
     database_id: uuid.UUID, view_id: uuid.UUID, user: CurrentUser, session: Session
 ) -> Response:
-    database, page = await _load(session, database_id, user.id)
+    database, page = await _load(session, database_id, user.id, Level.EDIT)
     try:
         view = await service.get_view(session, database, view_id)
         await service.delete_view(session, database, page, view)

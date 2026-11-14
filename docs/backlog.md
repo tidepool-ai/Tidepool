@@ -58,7 +58,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
 
 ## Phase 4: Sharing, search, AI
 
-- [ ] **T21 Permissions + Share dialog (api + web)**: Page access levels (full, edit, comment, view) inherited down the tree; invite by email; link access (invited only / workspace / public).
+- [x] **T21 Permissions + Share dialog (api + web)**: Page access levels (full, edit, comment, view) inherited down the tree; invite by email; link access (invited only / workspace / public).
   - Done when: API tests cover inheritance and overrides; dialog matches the design.
 - [ ] **T22 Command bar (api + web)**: Cmd/Ctrl+K palette; title search API respecting permissions; recent pages when empty; actions (new page, create task).
   - Done when: keyboard-only flow tested; results never include pages the user can't open.

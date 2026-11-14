@@ -1,7 +1,8 @@
 """Page tree operations and the access check every page endpoint uses.
 
-Until page-level sharing (T21), a page is visible to and editable by the owners, admins and members
-of its workspace. Guests see no pages yet, because nothing can be shared with them.
+Access levels (view, comment, edit, full) and how they're inherited: app/permissions/service.py.
+Top-level pages can be created by workspace owners, admins and members; subpages by anyone who can
+edit the parent.
 """
 
 import uuid
@@ -12,6 +13,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.pages.models import Ltree, Page, PageContent, path_label
+from app.permissions import service as permissions
+from app.permissions.service import Level
 from app.workspaces.models import Role
 from app.workspaces.service import WorkspaceForbiddenError, WorkspaceNotFoundError, require_member
 
@@ -30,6 +33,18 @@ class PageConflictError(Exception):
     """The page (or its target) is in the wrong state, e.g. in the trash."""
 
 
+class PageForbiddenError(Exception):
+    """The caller can open the page, but their access level doesn't allow this."""
+
+
+def _forbidden(level: Level, need: Level) -> PageForbiddenError:
+    if need >= Level.FULL:
+        return PageForbiddenError("This needs full access to the page")
+    if level <= Level.COMMENT:
+        return PageForbiddenError("You can view this page but not change it")
+    return PageForbiddenError("You don't have access to do this")
+
+
 async def can_access_workspace(session: AsyncSession, workspace_id: uuid.UUID, user_id: uuid.UUID) -> bool:
     try:
         await require_member(session, workspace_id, user_id, PAGE_ROLES)
@@ -39,15 +54,29 @@ async def can_access_workspace(session: AsyncSession, workspace_id: uuid.UUID, u
 
 
 async def get_page(
-    session: AsyncSession, page_id: uuid.UUID, user_id: uuid.UUID, *, for_update: bool = False
+    session: AsyncSession,
+    page_id: uuid.UUID,
+    user_id: uuid.UUID,
+    *,
+    need: Level = Level.VIEW,
+    for_update: bool = False,
 ) -> Page:
-    """Load a page the caller may access, or raise PageNotFoundError."""
+    """Load a page the caller can open, with `access` set.
+
+    Raises PageNotFoundError if they can't open it, PageForbiddenError if their level is below `need`.
+    """
     query = select(Page).where(Page.id == page_id)
     if for_update:
         query = query.with_for_update()
     page = await session.scalar(query)
-    if page is None or not await can_access_workspace(session, page.workspace_id, user_id):
+    if page is None:
         raise PageNotFoundError
+    level = await permissions.level(session, page, user_id)
+    if level is Level.NONE:
+        raise PageNotFoundError
+    page.access = level.label
+    if level < need:
+        raise _forbidden(level, need)
     return page
 
 
@@ -80,7 +109,12 @@ async def create_page(
     database_id: uuid.UUID | None = None,
 ) -> Page:
     """Create a page; with `database_id`, a row of that database (under the database's page)."""
-    if not await can_access_workspace(session, workspace_id, user_id):
+    if parent_id is not None:
+        try:
+            await get_page(session, parent_id, user_id, need=Level.EDIT)
+        except PageNotFoundError:
+            raise InvalidParentError("parent_id is not a page in this workspace") from None
+    elif not await can_access_workspace(session, workspace_id, user_id):
         raise PageNotFoundError
     for_row = database_id is not None
     parent = await _valid_parent(session, workspace_id, parent_id, for_row=for_row) if parent_id else None
@@ -98,6 +132,7 @@ async def create_page(
     session.add(page)
     await session.flush()
     await session.refresh(page)
+    page.access = (await permissions.level(session, page, user_id)).label
     return page
 
 

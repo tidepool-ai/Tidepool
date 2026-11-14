@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 import app.auth.models  # noqa: F401  (register tables on Base.metadata)
 import app.databases.models  # noqa: F401
 import app.pages.models  # noqa: F401
+import app.permissions.models  # noqa: F401
 import app.realtime.models  # noqa: F401
 import app.workspaces.models  # noqa: F401
 from app.config import settings
