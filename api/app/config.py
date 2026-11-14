@@ -95,9 +95,18 @@ class Settings:
     realtime_save_max_delay_seconds: float = 10
     # Largest single WebSocket message accepted, in bytes.
     max_realtime_message_bytes: int = int(os.getenv("MAX_REALTIME_MESSAGE_BYTES") or 1_000_000)
+    # AI (T23): the hosted GLM model's OpenAI-compatible API. AI is off until all three are set.
     glm_base_url: str = os.getenv("GLM_BASE_URL", "")
     glm_api_key: str = os.getenv("GLM_API_KEY", "")
     glm_model: str = os.getenv("GLM_MODEL", "")
+    # Tokens (prompt + answer) each person can use per UTC day; 0 means no limit.
+    ai_daily_token_quota: int = int(os.getenv("AI_DAILY_TOKEN_QUOTA") or 200_000)
+    # Longest answer, in tokens.
+    ai_max_output_tokens: int = int(os.getenv("AI_MAX_OUTPUT_TOKENS") or 1_500)
+    # How long one answer may take, start to finish, before it's cut off.
+    ai_timeout_seconds: float = float(os.getenv("AI_TIMEOUT_SECONDS") or 60)
+    # How much of the page goes to the model as context, in characters (headings are kept first).
+    ai_context_chars: int = int(os.getenv("AI_CONTEXT_CHARS") or 16_000)
 
 
 settings = Settings()

@@ -8,3 +8,5 @@ email-validator>=2.2
 boto3>=1.35
 pycrdt>=0.12
 redis>=5.2
+# GLM via its OpenAI-compatible API (T23)
+openai==3.41.0
