@@ -1,0 +1,223 @@
+:host {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+
+.bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.filters {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-soft);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  max-width: 320px;
+  padding: 0 12px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-soft-text);
+  font: inherit;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+span.chip {
+  border: 1px solid var(--color-border);
+  background: var(--color-soft);
+}
+
+button.chip {
+  padding-right: 4px;
+  cursor: pointer;
+}
+
+.chip-remove,
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.chip-remove:hover,
+.icon-button:hover,
+.add-filter:hover,
+.sort-button:hover:not(:disabled),
+.menu button:hover {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  color: var(--color-text);
+}
+
+.add-filter,
+.sort-button,
+.mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.mode {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.sort-button.active {
+  color: var(--color-primary);
+}
+
+.sort-button:disabled {
+  cursor: default;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 6;
+  display: grid;
+  gap: 8px;
+  min-width: 260px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.popover.sorts {
+  right: 0;
+  left: auto;
+}
+
+.popover.menu {
+  gap: 0;
+  max-height: 320px;
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.menu button {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.type,
+.muted {
+  color: var(--color-muted);
+}
+
+.muted {
+  margin: 0;
+}
+
+.field-row,
+.sort-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.property-name {
+  font-weight: 600;
+}
+
+select,
+input {
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.sort-row select:first-child {
+  flex: 1;
+}
+
+.link-button {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.link-button:disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.link-button.remove {
+  color: var(--color-danger-text);
+}
+
+.error {
+  margin: 0 0 8px;
+  color: var(--color-danger-text);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

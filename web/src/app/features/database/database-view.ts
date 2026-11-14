@@ -18,12 +18,13 @@ import { DatabaseBoard } from './board/board';
 import { Row } from './database.api';
 import { DatabaseStore } from './database.store';
 import { DatabaseTable } from './table/table';
+import { ViewToolbar } from './toolbar/view-toolbar';
 
 /** A database page's body: its views as tabs, and the active one (Table, T17, or Board, T18). */
 @Component({
   selector: 'app-database-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatabaseTable, DatabaseBoard, RowPeek],
+  imports: [DatabaseTable, DatabaseBoard, RowPeek, ViewToolbar],
   providers: [DatabaseStore],
   templateUrl: './database-view.html',
   styleUrl: './database-view.scss',

@@ -53,7 +53,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: drag and keyboard move tested.
 - [x] **T19 Row side peek (web)**: Opens a row as a side panel with properties on top and the editor below; open as full page.
   - Done when: URL reflects the open row; Esc closes.
-- [ ] **T20 Filters and sorts UI (web)**: Filter chips, sort menu, saved per view.
+- [x] **T20 Filters and sorts UI (web)**: Filter chips, sort menu, saved per view.
   - Done when: settings persist per view and reload correctly.
 
 ## Phase 4: Sharing, search, AI

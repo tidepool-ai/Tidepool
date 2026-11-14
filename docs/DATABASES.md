@@ -65,3 +65,9 @@ from another query is refused. Pages never skip or repeat rows, even with ties a
   a checkbox. Edits show at once and go back if the server refuses them.
 - Only the rows in view are in the page (CDK virtual scroll, 36 px rows); more rows load 100 at a
   time as the end comes into view. Column menus rename a property or change its type; "+" adds one.
+- Above each view (T20): filter chips and a sort menu, saved to that view at once, so every view keeps
+  its own and they come back on reload. "+ Filter" picks a property; a condition is saved once it has
+  a value ("is empty" and checkboxes right away). With two or more, "All of" / "Any of" joins them.
+  Filters with nested groups (made through the API) show as "Advanced filter" and can only be
+  cleared. The sort menu takes up to five sorts, each by a different property. Read-only databases
+  show the settings without letting them change.
