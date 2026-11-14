@@ -43,6 +43,13 @@ services:
       # Live editing: only needed when running more than one API worker or instance (docs/REALTIME.md).
       - key: REDIS_URL
         sync: false # leave empty for one instance
+      # AI (docs/AI.md). Empty leaves AI off.
+      - key: GLM_BASE_URL
+        sync: false
+      - key: GLM_API_KEY
+        sync: false
+      - key: GLM_MODEL
+        sync: false
       # Until Resend is set up, sign-in links go to the Render logs. Test deploys only.
       - key: LOG_MAGIC_LINKS
         value: "true"

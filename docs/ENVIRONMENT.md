@@ -29,7 +29,11 @@ on your own machine or exist for one CI run.
 | `REALTIME_SAVE_DELAY_SECONDS` | No | No | `2` | Live documents are saved this long after the last edit (and at least every 10 s while editing). |
 | `MAX_REALTIME_MESSAGE_BYTES` | No | No | `1000000` | Largest WebSocket message accepted; bigger ones close the socket. |
 | `TEST_DATABASE_URL` | Yes if set | No | `DATABASE_URL` + `_test` | Test database. It is **dropped and recreated** on every test run; its name must end in `_test`. |
-| `GLM_BASE_URL`, `GLM_API_KEY`, `GLM_MODEL` | `GLM_API_KEY` **yes** | From T23 | *(empty)* | Hosted GLM model for AI features. The key stays on the server. |
+| `GLM_BASE_URL`, `GLM_API_KEY`, `GLM_MODEL` | `GLM_API_KEY` **yes** | For AI | *(empty: AI off)* | Hosted GLM model's OpenAI-compatible API (base URL ending in `/v1` or as the provider gives it). The key stays on the server. See [AI.md](AI.md). |
+| `AI_DAILY_TOKEN_QUOTA` | No | No | `200000` | Tokens (prompt + answer) each person can use per UTC day; `0` means no limit. |
+| `AI_MAX_OUTPUT_TOKENS` | No | No | `1500` | Longest answer, in tokens. |
+| `AI_TIMEOUT_SECONDS` | No | No | `60` | How long one answer may take, start to finish. |
+| `AI_CONTEXT_CHARS` | No | No | `16000` | How much of the page is sent as context, in characters (headings kept first). |
 
 Generate a `JWT_SECRET`:
 

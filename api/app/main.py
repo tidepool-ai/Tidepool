@@ -13,6 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.router import router as ai_router
 from app.auth.router import router as auth_router
 from app.config import settings
 from app.databases.router import router as databases_router
@@ -78,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(files_router)
     app.include_router(databases_router)
     app.include_router(realtime_router)
+    app.include_router(ai_router)
 
     # Also under /api so the web app can reach it through its /api forwarding (and wake a sleeping host).
     @app.get("/api/health", tags=["system"])

@@ -62,7 +62,7 @@ Each task lists what must be true when it's done. Specs: `docs/PRD.md` (FR-IDs) 
   - Done when: API tests cover inheritance and overrides; dialog matches the design.
 - [x] **T22 Command bar (api + web)**: Cmd/Ctrl+K palette; title search API respecting permissions; recent pages when empty; actions (new page, create task).
   - Done when: keyboard-only flow tested; results never include pages the user can't open.
-- [ ] **T23 AI service (api)**: `app/ai/` module using the `openai` SDK with `GLM_BASE_URL`/`GLM_API_KEY`/`GLM_MODEL`; `POST /api/ai/complete` streams SSE; per-user daily token quota; usage log.
+- [x] **T23 AI service (api)**: `app/ai/` module using the `openai` SDK with `GLM_BASE_URL`/`GLM_API_KEY`/`GLM_MODEL`; `POST /api/ai/complete` streams SSE; per-user daily token quota; usage log.
   - Done when: tests use a fake OpenAI-compatible server; quota and timeout paths tested.
 - [ ] **T24 Ask AI draft (web)**: Space on an empty line or `/ai` opens the prompt; streams into a draft block; Stop, Retry, Discard, Insert; thumbs feedback; "AI-generated" label.
   - Done when: streaming and each action tested with a mocked SSE stream.
