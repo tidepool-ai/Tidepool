@@ -3,7 +3,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,9 +12,10 @@ from app.config import settings
 from app.db import get_session
 from app.pages import service
 from app.pages.models import Page, PageContent
-from app.pages.schemas import PageContentIn, PageContentOut, PageCreate, PageOut, PageUpdate
+from app.pages.schemas import PageContentIn, PageContentOut, PageCreate, PageOut, PageUpdate, SearchResult
 from app.permissions import service as permissions
 from app.permissions.service import Level
+from app.workspaces.service import WorkspaceNotFoundError, require_member
 
 router = APIRouter(tags=["pages"])
 
@@ -78,7 +79,36 @@ async def create_page(body: PageCreate, user: CurrentUser, session: Session) -> 
 
 @router.get("/api/pages/{page_id}")
 async def get_page(page_id: uuid.UUID, user: CurrentUser, session: Session) -> PageOut:
-    return _out(await _load(session, page_id, user.id))
+    """The page, if the caller can open it. Counts as a visit for their recent pages (T22)."""
+    page = await _load(session, page_id, user.id)
+    await service.record_visit(session, page, user.id)
+    await session.commit()
+    return _out(page)
+
+
+@router.get("/api/workspaces/{workspace_id}/search")
+async def search(
+    workspace_id: uuid.UUID,
+    user: CurrentUser,
+    session: Session,
+    q: Annotated[str, Query(max_length=200)] = "",
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> list[SearchResult]:
+    """Title search for the command bar; with no text, the caller's recent pages.
+
+    Only pages the caller can open are returned, and breadcrumbs only name pages they can open.
+    """
+    try:
+        await require_member(session, workspace_id, user.id)
+    except WorkspaceNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found") from None
+    text_query = q.strip()
+    if text_query:
+        pages = await service.search(session, workspace_id, user.id, text_query, limit)
+    else:
+        pages = await service.recent(session, workspace_id, user.id, limit)
+    paths = await service.breadcrumbs(session, pages, user.id)
+    return [SearchResult(**_out(page).model_dump(), path=paths[page.id]) for page in pages]
 
 
 @router.patch("/api/pages/{page_id}")

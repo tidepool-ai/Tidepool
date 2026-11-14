@@ -123,3 +123,37 @@
 .rail :focus-visible {
   outline-color: var(--color-on-rail);
 }
+
+.search-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  margin: 0 0 12px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.search-button:hover {
+  color: var(--color-text);
+}
+
+.search-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+}
+
+.search-button kbd {
+  margin-left: auto;
+  font: inherit;
+  font-size: 12px;
+}

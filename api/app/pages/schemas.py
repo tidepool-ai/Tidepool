@@ -49,6 +49,11 @@ class PageOut(BaseModel):
     updated_at: datetime
 
 
+class SearchResult(PageOut):
+    # Titles of the pages above it that the caller can open, top first (the breadcrumb).
+    path: list[str]
+
+
 class PageContentIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

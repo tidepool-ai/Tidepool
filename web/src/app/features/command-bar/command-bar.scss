@@ -1,0 +1,218 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: start center;
+  padding: 12vh 16px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-text) 30%, transparent);
+}
+
+.bar {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  width: min(760px, 100%);
+  max-height: 70vh;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--color-text) 20%, transparent);
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.search-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--color-muted);
+  stroke-width: 2;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 17px;
+}
+
+input:focus-visible {
+  outline: none;
+}
+
+kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 12px;
+}
+
+.scopes {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+}
+
+.scopes button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.scopes button[aria-selected='true'] {
+  background: var(--color-soft);
+  color: var(--color-soft-text);
+  font-weight: 600;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.results {
+  margin: 0;
+  padding: 8px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.group {
+  padding: 8px 10px 4px;
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+[role='option'] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+[role='option'].active {
+  background: color-mix(in srgb, var(--color-text) 6%, transparent);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+[role='option'][aria-disabled='true'] {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  color: var(--color-muted);
+}
+
+.text {
+  display: grid;
+  min-width: 0;
+}
+
+.label,
+.detail {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.detail,
+.empty,
+.crumbs,
+.meta {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.empty {
+  margin: 0;
+  padding: 16px 18px;
+}
+
+.error {
+  margin: 8px 16px 0;
+  color: var(--color-danger-text);
+}
+
+.preview {
+  display: none;
+}
+
+// The preview pane needs room (DESIGN-SYSTEM.md section 7: at 900px and up).
+@media (min-width: 900px) {
+  .body {
+    grid-template-columns: 1fr 260px;
+  }
+
+  .preview {
+    display: block;
+    padding: 20px;
+    border-left: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .preview-icon {
+    font-size: 28px;
+  }
+
+  .preview h2 {
+    margin: 8px 0 4px;
+    font-size: 18px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .preview p {
+    margin: 4px 0 0;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

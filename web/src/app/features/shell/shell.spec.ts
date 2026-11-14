@@ -54,6 +54,34 @@ describe('Shell', () => {
     expect(page.querySelector('[aria-label="Sign out"]')?.tagName).toBe('BUTTON');
   });
 
+  it('opens the command bar with Ctrl+K or the Search button, and puts focus back when it closes (T22)', async () => {
+    const search = Array.from(page.querySelectorAll<HTMLButtonElement>('nav[aria-label="Spaces"] button')).find((b) =>
+      b.textContent!.includes('Search'),
+    )!;
+    search.focus();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true, cancelable: true }));
+    await settle();
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    const field = page.querySelector<HTMLInputElement>('app-command-bar input[role="combobox"]')!;
+    expect(field).not.toBeNull();
+    expect(document.activeElement).toBe(field);
+
+    field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    harness.fixture.detectChanges();
+    await harness.fixture.whenStable();
+    expect(page.querySelector('app-command-bar')).toBeNull();
+    expect(document.activeElement).toBe(search);
+
+    search.click();
+    harness.fixture.detectChanges();
+    expect(page.querySelector('app-command-bar')).not.toBeNull();
+    // Ctrl+K again closes it.
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'K', metaKey: true, bubbles: true, cancelable: true }));
+    harness.fixture.detectChanges();
+    expect(page.querySelector('app-command-bar')).toBeNull();
+  });
+
   it('marks the current section with aria-current', async () => {
     expect(page.querySelector('[aria-label="Home"]')?.getAttribute('aria-current')).toBe('page');
     await harness.navigateByUrl('/settings/appearance');

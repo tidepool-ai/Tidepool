@@ -84,3 +84,15 @@ class PageContent(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.clock_timestamp(), onupdate=func.clock_timestamp()
     )
+
+
+class PageVisit(Base):
+    """When someone last opened a page (T22): the command bar's recent pages."""
+
+    __tablename__ = "page_visits"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    page_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("pages.id", ondelete="CASCADE"), primary_key=True)
+    visited_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.clock_timestamp(), index=True
+    )
